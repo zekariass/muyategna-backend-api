@@ -1,0 +1,59 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.2
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres-keycloak
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: "${KEYCLOAK_DB_PASSWORD}"
+      KC_DB_SCHEMA: public
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD}"
+    ports:
+      - "8081:8080"
+      - "9000:9000"
+    depends_on:
+      - postgres-keycloak
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/health/live || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  postgres-keycloak:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: "${KEYCLOAK_DB_PASSWORD}"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_keycloak:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-platform:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_DB: muyategna
+      POSTGRES_USER: muyategna
+      POSTGRES_PASSWORD: "${PLATFORM_DB_PASSWORD}"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_platform:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U muyategna"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_keycloak:
+  postgres_data_platform:

@@ -1,0 +1,44 @@
+# Java class files
+*.class
+
+# Maven build output
+target/
+
+# Log files
+*.log
+logs/
+!logs/.gitkeep
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# JDK specific (optional for preview features, temporary files)
+*.jmod
+replay_pid*.jfr
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment and config files (local only)
+.env
+application-local.properties
+application-local.yml
+application-dev.properties
+application-dev.yml
+
+# Ignore backup and temp files
+*.swp
+*.swo
+*.tmp
+*~
+
+# Lombok generated files (if you're using Lombok)
+lombok.config
+
+# IDE or tool-specific settings (optional - ignore if per-user)
+*.vscode/
