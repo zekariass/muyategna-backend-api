@@ -46,7 +46,8 @@ public final class Constants {
 
     //===================================================================================
 
-    public static final String DEFAULT_PAGE_SIZE_NAME = "DEFAULT_PAGE_SIZE";
+    public static final String DEFAULT_ADMIN_PAGE_SIZE_NAME = "DEFAULT_ADMIN_PAGE_SIZE";
+    public static final String DEFAULT_PUBLIC_PAGE_SIZE_NAME = "DEFAULT_PUBLIC_PAGE_SIZE";
 
     private Constants() {
         // Prevent instantiation

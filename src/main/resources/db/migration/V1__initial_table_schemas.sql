@@ -185,9 +185,10 @@ CREATE TABLE IF NOT EXISTS address (
     city_id BIGINT NOT NULL,                    -- Foreign Key to City table
     sub_city_or_division_id BIGINT,                         -- Optional sub-city or district (foreign key to City)
     locality VARCHAR(255),                      -- Locality or neighborhood name
+    street VARCHAR(255),                        -- Street name
     landmark VARCHAR(255),                      -- Landmark for easy identification
     postal_code VARCHAR(20),                    -- Postal code (e.g., '1234')
-    location GEOGRAPHY(POINT, 4326),
+    geo_point GEOGRAPHY(POINT, 4326),
     full_address TEXT,                          -- Full address
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of address creation
     CONSTRAINT fk_address_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE CASCADE, -- Reference to Country table
@@ -196,14 +197,13 @@ CREATE TABLE IF NOT EXISTS address (
     CONSTRAINT fk_address_sub_city_or_division_id FOREIGN KEY (sub_city_or_division_id) REFERENCES sub_city_or_division(sub_city_or_division_id) -- Optional foreign key for sub-city
 );
 
--- Optional Indexes for better performance on common queries
 CREATE INDEX idx_address_country_id ON address(country_id);
 CREATE INDEX idx_address_region_id ON address(region_id);
 CREATE INDEX idx_address_city_id ON address(city_id);
 CREATE INDEX idx_address_sub_city_or_division_id ON address(sub_city_or_division_id);
 CREATE INDEX idx_address_postal_code ON address(postal_code);
 CREATE INDEX idx_address_locality ON address(locality);
-CREATE INDEX idx_addresses_location ON address USING GIST (location);
+CREATE INDEX idx_address_geo_point ON address USING GIST (geo_point);
 
 
 
@@ -231,6 +231,103 @@ CREATE TABLE IF NOT EXISTS user_profile (
 CREATE INDEX idx_user_profile_email ON user_profile(email);
 CREATE INDEX idx_user_profile_keycloak_user_id ON user_profile(keycloak_user_id);
 CREATE INDEX idx_user_profile_address_id ON user_profile(address_id);
+
+--======================================================================================
+--SERVICE RELATED TABLES
+--======================================================================================
+CREATE TABLE service_category (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_service_category_name ON service_category(name);
+
+
+CREATE TABLE IF NOT EXISTS service_category_translation (
+    id BIGSERIAL PRIMARY KEY,
+    service_category_id INT NOT NULL,
+    language_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sct_category FOREIGN KEY (service_category_id) REFERENCES service_category(id) ON DELETE CASCADE,
+    CONSTRAINT fk_sct_language FOREIGN KEY (language_id) REFERENCES language(language_id) ON DELETE CASCADE,
+    CONSTRAINT unique_service_category_language UNIQUE (service_category_id, language_id)
+);
+
+CREATE INDEX idx_sct_language ON service_category_translation(language_id);
+CREATE INDEX idx_sct_category ON service_category_translation(service_category_id);
+
+
+CREATE TABLE IF NOT EXISTS service (
+    id BIGSERIAL PRIMARY KEY,
+    service_category_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_service_service_category FOREIGN KEY (service_category_id) REFERENCES service_category(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_service_service_category ON service(service_category_id);
+CREATE INDEX idx_service_name ON service(name);
+
+
+CREATE TABLE service_translation (
+    id BIGSERIAL PRIMARY KEY,
+    service_id INT NOT NULL,
+    language_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_st_service FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE,
+    CONSTRAINT fk_st_language FOREIGN KEY (language_id) REFERENCES language(language_id) ON DELETE CASCADE,
+    CONSTRAINT uq_st_unique UNIQUE (service_id, language_id)
+);
+
+CREATE INDEX idx_st_service ON service_translation(service_id);
+CREATE INDEX idx_st_language ON service_translation(language_id);
+
+-- Create ENUM type for price_model
+CREATE TYPE price_model_enum AS ENUM ('FIXED', 'HOURLY', 'TIERED', 'QUOTE', 'PER_UNIT');
+
+CREATE TABLE IF NOT EXISTS service_country_availability (
+    id BIGSERIAL PRIMARY KEY,
+    service_id INT NOT NULL,
+    country_id INT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    price_model price_model_enum NOT NULL DEFAULT 'QUOTE', -- Default to QUOTE
+    base_price NUMERIC(10, 2),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sca_service FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE,
+    CONSTRAINT fk_sca_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE CASCADE,
+    CONSTRAINT uq_sca_service_country UNIQUE (service_id, country_id)
+);
+
+CREATE INDEX idx_sca_service_id ON service_country_availability(service_id);
+CREATE INDEX idx_sca_country_id ON service_country_availability(country_id);
+CREATE INDEX idx_sca_price_model ON service_country_availability(price_model);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 -- Create ENUM type for provider_type
