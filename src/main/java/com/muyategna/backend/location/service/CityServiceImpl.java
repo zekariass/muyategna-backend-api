@@ -68,7 +68,7 @@ public class CityServiceImpl implements CityService {
 
         if (cityTranslation == null) {
             LanguageDto globalLanguage = languageService.getGlobalLanguage();
-            cityTranslation = cityTranslationRepository.findByCityIdAndLanguageId(globalLanguage.getId(), cityId).orElseThrow(() -> new ResourceNotFoundException("City translation not found for city with id: " + cityId));
+            cityTranslation = cityTranslationRepository.findByCityIdAndLanguageId(cityId, globalLanguage.getId()).orElseThrow(() -> new ResourceNotFoundException("City translation not found for city with id: " + cityId));
         }
 
         log.info("Retrieved city with id: {}", cityId);
@@ -90,7 +90,11 @@ public class CityServiceImpl implements CityService {
         log.info("Retrieving cities for regionId: {}, languageId: {}", regionId, languageId); // logg
         List<City> cities = cityRepository.findByRegionId(regionId);
         List<Long> cityIds = cities.stream().map(City::getId).toList();
+        System.out.println("================================================>>>: " + cityIds.size());
+        System.out.println("================================================>>>: " + cityIds);
         List<CityTranslation> cityTranslations = cityTranslationRepository.findByLanguageIdAndCityIdIn(languageId, cityIds);
+
+        System.out.println("================================================>>>: " + cityTranslations);
 
         /* Create a map of cityId to CityTranslation */
         Map<Long, CityTranslation> cityTranslationMap = cityTranslations

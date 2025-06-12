@@ -102,7 +102,7 @@ public class AdminPaginationService {
         try {
             if (size == null) {
                 size = systemConfigRepository
-                        .findByName(Constants.DEFAULT_PAGE_SIZE_NAME)
+                        .findByName(Constants.DEFAULT_ADMIN_PAGE_SIZE_NAME)
                         .map(SystemConfig::getValue)
                         .map(Integer::parseInt)
                         .orElse(10);

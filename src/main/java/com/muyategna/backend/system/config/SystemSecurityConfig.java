@@ -78,7 +78,7 @@ public class SystemSecurityConfig {
 //                        .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resource/**",
 //                                "/webjars/**", "/docs").permitAll()
                                 .requestMatchers(Constants.PUBLIC_API_ENDPOINTS_FOR_ACCESS.toArray(new String[0])).permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/v1/public/location/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
                                 .anyRequest().authenticated()
                 );
         http.exceptionHandling(exc -> exc
