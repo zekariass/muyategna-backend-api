@@ -12,6 +12,7 @@ public final class CommonUtil {
      * @return true if the sort field is invalid, false otherwise
      */
     public static boolean isSortFieldInvalid(Class<?> entityClass, String sortField) {
+
         return Arrays.stream(entityClass.getDeclaredFields())
                 .noneMatch(field -> field.getName().equals(sortField));
     }

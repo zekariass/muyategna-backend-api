@@ -50,7 +50,7 @@ public class Address {
     private String postalCode;
 
     // Use Hibernate Spatial to map geography point
-    @Column(name = "location")
+    @Column(name = "geo_point")
     @JdbcTypeCode(SqlTypes.GEOMETRY)
     private Point geoPoint;
 

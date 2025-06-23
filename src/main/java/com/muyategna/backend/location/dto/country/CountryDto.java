@@ -16,6 +16,8 @@ public class CountryDto {
     private String continent;
     private String description;
     private boolean isGlobal;
+    private String currency;
+    private String taxpayerIdType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

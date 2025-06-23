@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+
 @Service
 @Slf4j
 public class PublicPaginationService {
@@ -39,11 +41,31 @@ public class PublicPaginationService {
 
         int safePage = Math.max(0, page - 1);
         int safeSize = Math.max(1, size);
-        if (CommonUtil.isSortFieldInvalid(clazz, sortBy)) {
-            sortBy = "id";
+
+        if (sortBy == null) {
+            sortBy = "id,asc";
         }
 
-        return PageRequest.of(safePage, safeSize, Sort.Direction.ASC, sortBy);
+        String[] sortByArray = Arrays.stream(sortBy.split(","))
+                .map(String::trim)
+                .toArray(String[]::new);
+        String sortByField = sortByArray[0];
+        String sortByDirection = null;
+
+        if (sortByArray.length > 1) {
+            sortByDirection = sortByArray[1];
+        }
+
+        Sort.Direction direction = sortByDirection != null
+                ? Sort.Direction.fromString(sortByDirection)
+                : Sort.Direction.ASC;
+
+
+        if (CommonUtil.isSortFieldInvalid(clazz, sortBy)) {
+            sortByField = "id";
+        }
+
+        return PageRequest.of(safePage, safeSize, direction, sortByField);
     }
 
     /**

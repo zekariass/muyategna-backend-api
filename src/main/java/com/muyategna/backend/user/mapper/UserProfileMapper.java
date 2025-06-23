@@ -25,4 +25,21 @@ public final class UserProfileMapper {
         userProfileDto.setDefaultLanguageId(userProfile.getDefaultLanguage().getId());
         return userProfileDto;
     }
+
+
+    public static UserProfile toEntity(UserProfileDto userProfileDto) {
+        if (userProfileDto == null) return null;
+        UserProfile userProfile = new UserProfile();
+        userProfile.setId(userProfileDto.getId());
+        userProfile.setKeycloakUserId(userProfileDto.getKeycloakUserId());
+        userProfile.setFirstName(userProfileDto.getFirstName());
+        userProfile.setMiddleName(userProfileDto.getMiddleName());
+        userProfile.setLastName(userProfileDto.getLastName());
+        userProfile.setPhoneNumber(userProfileDto.getPhoneNumber());
+        userProfile.setEmail(userProfileDto.getEmail());
+        userProfile.setProfilePictureUrl(userProfileDto.getProfilePictureUrl());
+        userProfile.setLastLogin(userProfileDto.getLastLogin());
+        userProfile.setReferralCode(userProfileDto.getReferralCode());
+        return userProfile;
+    }
 }

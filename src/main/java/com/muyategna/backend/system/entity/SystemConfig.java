@@ -1,7 +1,6 @@
 package com.muyategna.backend.system.entity;
 
 import com.muyategna.backend.system.enums.DataTypes;
-import com.muyategna.backend.user.entity.UserProfile;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -42,16 +41,12 @@ public class SystemConfig {
     private DataTypes type;
 
     @CreatedBy
-//    @Column(name = "created_by", nullable = false, updatable = false) //C
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false, updatable = false)
-    private UserProfile createdBy;
+    @Column(name = "created_by", nullable = false, updatable = false)
+    private Long createdBy;
 
     @LastModifiedBy
-//    @Column(name = "updated_by", nullable = false)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "updated_by", nullable = false)
-    private UserProfile updatedBy;
+    @Column(name = "updated_by", nullable = false)
+    private Long updatedBy;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

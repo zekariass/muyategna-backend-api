@@ -1,7 +1,7 @@
 package com.muyategna.backend.system.config;
 
 import com.muyategna.backend.common.Constants;
-import com.muyategna.backend.system.converter.KeycloakRoleConverter;
+import com.muyategna.backend.system.converter.CustomRoleConverter;
 import com.muyategna.backend.system.exception.CustomAccessDeniedHandler;
 import com.muyategna.backend.system.exception.CustomAuthenticationEntryPoint;
 import com.muyategna.backend.system.filter.CountryFilter;
@@ -39,12 +39,14 @@ public class SystemSecurityConfig {
     private final CountryFilter countryFilter;
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final CustomRoleConverter customRoleConverter;
 
-    public SystemSecurityConfig(LanguageFilter languageFilter, CountryFilter countryFilter, CustomAccessDeniedHandler accessDeniedHandler, CustomAuthenticationEntryPoint authenticationEntryPoint) {
+    public SystemSecurityConfig(LanguageFilter languageFilter, CountryFilter countryFilter, CustomAccessDeniedHandler accessDeniedHandler, CustomAuthenticationEntryPoint authenticationEntryPoint, CustomRoleConverter customRoleConverter) {
         this.languageFilter = languageFilter;
         this.countryFilter = countryFilter;
         this.accessDeniedHandler = accessDeniedHandler;
         this.authenticationEntryPoint = authenticationEntryPoint;
+        this.customRoleConverter = customRoleConverter;
     }
 
     /**
@@ -58,7 +60,8 @@ public class SystemSecurityConfig {
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakRoleConverter());
+//        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakRoleConverter());
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(customRoleConverter);
         http.sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .cors(corsConfig -> corsConfig.configurationSource(new CorsConfigurationSource() {
                     @Override

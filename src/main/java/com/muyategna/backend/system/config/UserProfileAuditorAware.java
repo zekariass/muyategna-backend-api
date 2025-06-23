@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @Component("auditorAware")
 @Slf4j
-public class UserProfileAuditorAware implements AuditorAware<UserProfile> {
+public class UserProfileAuditorAware implements AuditorAware<Long> {
 
     private final UserProfileRepository userProfileRepository;
 
@@ -33,7 +33,7 @@ public class UserProfileAuditorAware implements AuditorAware<UserProfile> {
      */
     @NotNull
     @Override
-    public Optional<UserProfile> getCurrentAuditor() {
+    public Optional<Long> getCurrentAuditor() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -53,9 +53,9 @@ public class UserProfileAuditorAware implements AuditorAware<UserProfile> {
                     return Optional.empty();
                 }
 
-                Optional<UserProfile> userProfileOptional = userProfileRepository.findByKeycloakUserId(uuid);
-                if (userProfileOptional.isPresent()) {
-                    return userProfileOptional;
+                Optional<UserProfile> userProfile = userProfileRepository.findByKeycloakUserId(uuid);
+                if (userProfile.isPresent()) {
+                    return Optional.of(userProfile.get().getId());
                 } else {
                     log.warn("No UserProfile found for Keycloak ID: {}", keycloakUserId);
                 }

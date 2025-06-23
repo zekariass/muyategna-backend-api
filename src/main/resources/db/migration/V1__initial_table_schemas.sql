@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS country (
     is_global BOOLEAN NOT NULL DEFAULT FALSE,    -- Is this a global country?
     continent VARCHAR(100),                      -- Continent (e.g., 'Africa')
     description TEXT,                            -- Description or additional information about the country
+    taxpayer_id_type VARCHAR(50) NOT NULL,              -- Type of taxpayer ID (e.g., 'TIN', 'VAT')
+    currency VARCHAR(3) NOT NULL,                        -- Currency used in the country (e.g., 'ETB' for Ethiopian Birr)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of creation
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Timestamp of last update
 );
@@ -277,7 +279,7 @@ CREATE INDEX idx_service_service_category ON service(service_category_id);
 CREATE INDEX idx_service_name ON service(name);
 
 
-CREATE TABLE service_translation (
+CREATE TABLE IF NOT EXISTS service_translation (
     id BIGSERIAL PRIMARY KEY,
     service_id INT NOT NULL,
     language_id INT NOT NULL,
@@ -314,6 +316,432 @@ CREATE TABLE IF NOT EXISTS service_country_availability (
 CREATE INDEX idx_sca_service_id ON service_country_availability(service_id);
 CREATE INDEX idx_sca_country_id ON service_country_availability(country_id);
 CREATE INDEX idx_sca_price_model ON service_country_availability(price_model);
+
+
+--================================================================================
+-- JOB QUESTION FLOW RELATED TABLES
+--================================================================================
+CREATE TABLE IF NOT EXISTS job_request_flow (
+    id BIGSERIAL PRIMARY KEY,
+    service_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_job_request_question_flow_service FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE
+);
+
+-- Indexes
+CREATE INDEX idx_job_request_question_flow_service_id ON job_request_flow(service_id);
+CREATE INDEX idx_job_request_question_flow_is_active ON job_request_flow(is_active);
+CREATE UNIQUE INDEX uq_one_active_flow_per_service ON job_request_flow(service_id) WHERE is_active = TRUE;
+
+-- Create ENUM type for question types
+CREATE TYPE question_type_enum AS ENUM ('TEXT', 'NUMBER', 'BOOLEAN', 'DATE', 'SINGLE_SELECT', 'MULTI_SELECT');
+
+-- Create JobRequestQuestion Table
+CREATE TABLE IF NOT EXISTS job_question (
+    id BIGSERIAL PRIMARY KEY,
+    type question_type_enum NOT NULL,
+    question TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+CREATE TABLE IF NOT EXISTS job_request_flow_question (
+    id BIGSERIAL PRIMARY KEY,
+    flow_id BIGINT NOT NULL,
+    question_id BIGINT NOT NULL,
+    order_index INT NOT NULL,
+    is_start BOOLEAN NOT NULL DEFAULT FALSE,
+    is_terminal BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_job_request_flow_question_flow FOREIGN KEY (flow_id) REFERENCES job_request_flow(id) ON DELETE CASCADE,
+    CONSTRAINT fk_job_request_flow_question_question FOREIGN KEY (question_id) REFERENCES job_question(id) ON DELETE CASCADE,
+    CONSTRAINT uq_flow_question UNIQUE (flow_id, question_id),
+    CONSTRAINT uq_order_index UNIQUE (flow_id, order_index),
+    CONSTRAINT chk_order_index_positive
+    CHECK (
+        order_index > 0
+    ),
+    CONSTRAINT chk_start_xor_terminal
+    CHECK (
+        NOT (is_start = TRUE AND is_terminal = TRUE)
+    )
+);
+
+CREATE INDEX idx_job_request_flow_question_flow_id ON job_request_flow_question(flow_id);
+CREATE INDEX idx_job_request_flow_question_question_id ON job_request_flow_question(question_id);
+CREATE INDEX idx_job_request_flow_question_order_index ON job_request_flow_question(order_index);
+
+
+
+-- job_question_translation
+CREATE TABLE IF NOT EXISTS job_question_translation (
+    id BIGSERIAL PRIMARY KEY,
+    question_id BIGINT NOT NULL,
+    language_id BIGINT NOT NULL,
+    question TEXT NOT NULL,
+    helpText TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_job_question_translation_question FOREIGN KEY (question_id) REFERENCES Job_question(id) ON DELETE CASCADE,
+    CONSTRAINT uq_job_question_language UNIQUE (question_id, language_id)
+);
+
+CREATE INDEX idx_question_translation_question_id ON job_question_translation (question_id);
+CREATE INDEX idx_question_translation_language_id_question_id ON job_question_translation (language_id, question_id);
+
+
+-- job_question_option
+CREATE TABLE IF NOT EXISTS job_question_option (
+    id BIGSERIAL PRIMARY KEY,
+    question_id BIGINT NOT NULL,
+    value TEXT NOT NULL,
+    order_index INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_job_question_option_question FOREIGN KEY (question_id) REFERENCES job_question(id) ON DELETE CASCADE,
+    CONSTRAINT uq_option_question UNIQUE (question_id, value),
+    CONSTRAINT uq_option_order_index UNIQUE (question_id, order_index),
+    CONSTRAINT chk_option_order_index
+    CHECK (
+        order_index > 0
+    )
+);
+
+CREATE INDEX idx_option_question_id ON job_question_option (question_id);
+CREATE INDEX idx_option_order_index ON job_question_option (order_index);
+
+
+-- job_question_option_translation
+CREATE TABLE IF NOT EXISTS job_question_option_translation (
+    id BIGSERIAL PRIMARY KEY,
+    option_id BIGINT NOT NULL,
+    language_id BIGINT NOT NULL,
+    label TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_job_question_option_translation_option FOREIGN KEY (option_id) REFERENCES job_question_option(id) ON DELETE CASCADE,
+    CONSTRAINT fk_job_question_option_translation_language FOREIGN KEY (language_id) REFERENCES language(language_id) ON DELETE CASCADE,
+    CONSTRAINT uq_option_language UNIQUE (option_id, language_id)
+);
+
+CREATE INDEX idx_option_translation_option_id ON job_question_option_translation (option_id);
+CREATE INDEX idx_option_translation_language_id_option_id ON job_question_option_translation (language_id, option_id);
+
+
+CREATE TABLE IF NOT EXISTS job_question_transition (
+    id BIGSERIAL PRIMARY KEY,
+    flow_id BIGINT NOT NULL,
+    from_flow_question_id BIGINT NOT NULL,
+    to_flow_question_id BIGINT NOT NULL,
+    option_id BIGINT,
+    condition_expression TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_job_question_transition_flow FOREIGN KEY (flow_id) REFERENCES job_request_flow(id) ON DELETE CASCADE,
+    CONSTRAINT fk_job_question_transition_from_question FOREIGN KEY (from_flow_question_id) REFERENCES job_request_flow_question(id) ON DELETE CASCADE,
+    CONSTRAINT fk_job_question_transition_to_question FOREIGN KEY (to_flow_question_id) REFERENCES job_request_flow_question(id) ON DELETE CASCADE,
+    CONSTRAINT fk_job_question_transition_option FOREIGN KEY (option_id) REFERENCES job_question_option(id) ON DELETE SET NULL,
+    CONSTRAINT uq_job_question_transition UNIQUE (flow_id, from_flow_question_id, option_id),
+--    CONSTRAINT uq_job_question_transition_option UNIQUE (flow_id, from_flow_question_id, to_flow_question_id),
+    CONSTRAINT check_job_question_from_not_equal_to CHECK (from_flow_question_id != to_flow_question_id);
+);
+
+CREATE INDEX idx_job_question_transition_flow ON job_question_transition(flow_id);
+CREATE INDEX idx_job_question_transition_from_question ON job_question_transition(from_flow_question_id);
+CREATE INDEX idx_job_question_transition_to_question ON job_question_transition(to_flow_question_id);
+CREATE INDEX idx_job_question_transition_flow_id_from_question_id_option_id ON job_question_transition(flow_id, from_flow_question_id, option_id);
+
+
+
+CREATE TYPE job_status_enum AS ENUM (
+    'DRAFT', 'SUBMITTED', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED'
+);
+
+CREATE TYPE when_to_start_job_enum AS ENUM (
+    'IMMEDIATELY',
+    'WITHIN_2_DAYS',
+    'WITHIN_4_DAYS',
+    'WITHIN_A_WEEK',
+    'WITHIN_2_WEEKS',
+    'WITHIN_3_WEEKS',
+    'WITHIN_A_MONTH',
+    'WITHIN_2_MONTHS',
+    'WITHIN_3_MONTHS',
+    'WITHIN_6_MONTHS',
+    'WITHIN_1_YEAR',
+    'ANY_TIME',
+    'AGREEMENT'
+);
+
+CREATE TABLE IF NOT EXISTS job_request (
+    id BIGSERIAL PRIMARY KEY,
+    service_id BIGINT NOT NULL,
+    customer_id BIGINT NOT NULL,
+    description TEXT,
+    budget NUMERIC,
+    when_to_start when_to_start_job_enum NOT NULL,
+    status job_status_enum NOT NULL DEFAULT 'DRAFT',
+    address_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_job_request_service FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_job_request_customer FOREIGN KEY (customer_id) REFERENCES user_profile(user_profile_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_job_request_address FOREIGN KEY (address_id) REFERENCES address(address_id) ON DELETE SET NULL
+);
+
+-- Indexes
+CREATE INDEX idx_job_request_service ON job_request(service_id);
+CREATE INDEX idx_job_request_customer ON job_request(customer_id);
+CREATE INDEX idx_job_request_status ON job_request(status);
+CREATE INDEX idx_job_request_service_id_status ON job_request(service_id, status);
+
+
+CREATE TABLE IF NOT EXISTS job_question_answers (
+    id BIGSERIAL PRIMARY KEY,
+    job_request_id BIGINT NOT NULL, -- Foreign key to job_request
+    flow_question_id BIGINT NOT NULL, -- Foreign key to job_request_flow_question
+    answer_text TEXT,
+    answer_number NUMERIC(10, 2),
+    answer_boolean BOOLEAN,
+    answer_date DATE,
+    answer_option_ids BIGINT[],
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_answer_job FOREIGN KEY (job_request_id) REFERENCES job_request(id) ON DELETE CASCADE,
+    CONSTRAINT fk_answer_question FOREIGN KEY (flow_question_id) REFERENCES job_request_flow_question(id) ON DELETE CASCADE,
+
+    -- CHECK: At least one value must be non-null
+     CHECK (
+        answer_text IS NOT NULL OR
+        answer_number IS NOT NULL OR
+        answer_boolean IS NOT NULL OR
+        answer_date IS NOT NULL OR
+        array_length(answer_option_ids, 1) IS NOT NULL
+        )
+);
+
+CREATE INDEX idx_answers_job_request ON job_question_answers (job_request_id);
+CREATE INDEX idx_answers_flow_question ON job_question_answers (flow_question_id);
+CREATE INDEX idx_answers_job_flow_question ON job_question_answers (job_request_id, flow_question_id);
+
+--==============================================================================
+--SERVICE PROVIDER RELATED TABLES
+--==============================================================================
+
+CREATE TYPE service_provider_type_enum AS ENUM ('FREELANCER', 'SOLE_TRADER', 'LIMITED_COMPANY');
+CREATE TYPE portfolio_type_enum AS ENUM ('WEBSITE', 'IMAGE', 'VIDEO', 'DOCUMENT', 'OTHER');
+CREATE TYPE verification_status_enum AS ENUM ('PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED');
+
+CREATE TABLE IF NOT EXISTS service_provider (
+    id BIGSERIAL PRIMARY KEY,
+    business_name VARCHAR(255) NOT NULL,
+    business_description TEXT,
+    service_provider_type service_provider_type_enum NOT NULL DEFAULT 'SOLE_TRADER',
+    country_id BIGINT,
+    business_address_id BIGINT,
+    num_employees INT,
+    max_travel_distance_in_km NUMERIC(4, 2),
+    portfolio_url TEXT,
+    portfolio_type portfolio_type_enum NOT NULL DEFAULT 'WEBSITE',
+    business_logo_url TEXT,
+    verification_status verification_status_enum NOT NULL DEFAULT 'PENDING',
+    average_rating NUMERIC(2, 1) DEFAULT 0.0 CHECK (average_rating >= 0.0 AND average_rating <= 5.0),
+    number_of_reviews INT DEFAULT 0,
+    years_of_experience INT,
+    is_verified BOOLEAN DEFAULT false,
+    is_active BOOLEAN DEFAULT true,
+    is_blocked BOOLEAN DEFAULT false,
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_service_provider_business_address FOREIGN KEY (business_address_id) REFERENCES address(address_id) ON DELETE SET NULL,
+    CONSTRAINT fk_service_provider_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE SET NULL,
+    CONSTRAINT chk_number_of_employees CHECK (service_provider_type != 'FREELANCER' OR num_employees = 1),
+);
+
+CREATE INDEX idx_service_provider_business_address_id ON service_provider(business_address_id);
+
+CREATE TABLE IF NOT EXISTS service_employee (
+    id BIGSERIAL PRIMARY KEY,
+    user_profile_id BIGINT NOT NULL,
+    provider_id BIGINT NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    is_blocked BOOLEAN DEFAULT false,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    CONSTRAINT fk_service_employee_user FOREIGN KEY (user_profile_id) REFERENCES user_profile(user_profile_id),
+    CONSTRAINT fk_service_employee_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id)
+);
+
+CREATE INDEX idx_service_employee_provider ON service_employee(provider_id);
+CREATE INDEX idx_service_employee_is_active ON service_employee(is_active);
+
+
+-- Create role type for service provider roles - EMPLOYEE, MANAGER, OWNER, etc.
+CREATE TABLE IF NOT EXISTS service_provider_role (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+
+CREATE TABLE IF NOT EXISTS service_employee_role (
+    id BIGSERIAL PRIMARY KEY,
+    role_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_role_id FOREIGN KEY (role_id) REFERENCES service_provider_role(id) ON DELETE CASCADE,
+    CONSTRAINT fk_employee_id FOREIGN KEY (employee_id) REFERENCES service_employee(id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS service_provider_services (
+    id BIGSERIAL PRIMARY KEY,
+    service_id BIGINT NOT NULL,
+    provider_id BIGINT NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    linked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_sps_service FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE,
+    CONSTRAINT fk_sps_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_sps_provider ON service_provider_services(provider_id);
+CREATE INDEX idx_sps_service ON service_provider_services(service_id);
+CREATE INDEX idx_sps_is_active ON service_provider_services(is_active);
+CREATE INDEX idx_sps_service_id_is_active ON service_provider_services(service_id, is_active);
+
+
+
+CREATE TABLE IF NOT EXISTS service_provider_verification_type (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    provider_type service_provider_type_enum NOT NULL DEFAULT 'SOLE_TRADER',
+    is_mandatory BOOLEAN NOT NULL DEFAULT true,
+    document_required BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE IF NOT EXISTS service_provider_verification (
+    id BIGSERIAL PRIMARY KEY,
+    provider_id BIGINT NOT NULL,
+    type_id BIGINT NOT NULL,
+    verification_status verification_status_enum NOT NULL DEFAULT 'PENDING',
+    document_url TEXT,
+    reason_for_rejection TEXT,
+    verification_note TEXT,
+    verified_by BIGINT, -- User who verified the document
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_service_provider_verification_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id),
+    CONSTRAINT fk_service_provider_verification_type FOREIGN KEY (type_id) REFERENCES service_provider_verification_type(id),
+    CONSTRAINT fk_service_provider_verification_verified_by FOREIGN KEY (verified_by) REFERENCES user_profile(user_profile_id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_verification_provider ON service_provider_verification(provider_id);
+CREATE INDEX idx_verification_status ON service_provider_verification(verification_status);
+
+
+CREATE TABLE service_provider_tax_info (
+    id BIGSERIAL PRIMARY KEY,
+    service_provider_id BIGINT NOT NULL,
+    tax_payer_id_number VARCHAR(50),
+    is_vat_registered BOOLEAN NOT NULL DEFAULT FALSE,
+    is_tax_exempt BOOLEAN NOT NULL DEFAULT FALSE,
+    tax_exempt_certificate_number VARCHAR(50),
+    tax_exemption_reason TEXT,
+    income_tax_classification VARCHAR(50), -- e.g., 'Level 1', 'Level 2', etc. in Ethiopia
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_spti_service_provider FOREIGN KEY (service_provider_id) REFERENCES service_provider(id) ON DELETE CASCADE
+);
+
+--===================================================================
+-- AGREEMENT DOCUMENT RELATED TABLES
+--===================================================================
+
+CREATE TABLE legal_document (
+    id BIGSERIAL PRIMARY KEY,
+    country_id BIGINT, -- Foreign key to country table
+    name VARCHAR(100) NOT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    version VARCHAR(20),
+    is_required BOOLEAN NOT NULL DEFAULT TRUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    effective_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_legal_document_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE SET NULL,
+    CONSTRAINT unique_legal_document_type_country_id UNIQUE (name_internal, country_id)
+);
+
+CREATE INDEX idx_legal_document_country_id ON legal_document(country_id);
+CREATE INDEX idx_legal_document_country_id_is_required_is_active ON legal_document(country_id, is_required, is_active);
+
+CREATE TABLE legal_document_translation (
+    id BIGSERIAL PRIMARY KEY,
+    document_id BIGINT NOT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    document_url TEXT,
+    content TEXT,
+    language_id BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_adt_document FOREIGN KEY (document_id) REFERENCES legal_document(id) ON DELETE CASCADE,
+    CONSTRAINT fk_adt_language FOREIGN KEY (language_id) REFERENCES language(language_id) ON DELETE CASCADE,
+    CONSTRAINT chk_url_or_content CHECK (
+        (document_url IS NOT NULL) OR (content IS NOT NULL)
+    )
+);
+
+CREATE INDEX idx_legal_document_translation_document_id ON legal_document_translation(document_id);
+
+
+CREATE TABLE service_provider_agreement (
+    id BIGSERIAL PRIMARY KEY,
+    document_id BIGINT NOT NULL,
+    provider_id BIGINT NOT NULL,
+    is_signed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL,
+    CONSTRAINT fk_spa_document FOREIGN KEY (document_id) REFERENCES legal_document(id) ON DELETE CASCADE,
+    CONSTRAINT fk_spa_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_spa_provider ON service_provider_agreement(provider_id);
+CREATE INDEX idx_spa_document ON service_provider_agreement(document_id);
+CREATE INDEX idx_spa_document_id_provider_id ON service_provider_agreement(document_id, provider_id);
+
+
+
+
+
+
+
+
+
+
+
 
 
 
