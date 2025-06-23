@@ -29,4 +29,8 @@ public class CountryUpdateDto {
     private String description;
 
     private boolean isGlobal;
+
+    private String currency;
+    
+    private String taxpayerIdType;
 }

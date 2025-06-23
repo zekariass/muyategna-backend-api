@@ -24,4 +24,8 @@ public class CountryCreateDto {
 
     private boolean isGlobal;
 
+    private String currency;
+
+    private String taxpayerIdType;
+
 }

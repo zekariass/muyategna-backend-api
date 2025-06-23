@@ -1,5 +1,9 @@
 package com.muyategna.backend.location.dto.address;
 
+import com.muyategna.backend.location.dto.city.CityMinimalDto;
+import com.muyategna.backend.location.dto.country.CountryMinimalDto;
+import com.muyategna.backend.location.dto.region.RegionMinimalDto;
+import com.muyategna.backend.location.dto.sub_city_or_division.SubCityOrDivisionMinimalDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,10 +23,10 @@ import java.time.LocalDateTime;
 @Builder
 public class AddressDto {
     private Long id;
-    private Long countryId;
-    private Long regionId;
-    private Long cityId;
-    private Long subCityOrDivisionId;
+    private CountryMinimalDto countryMinimalDto;
+    private RegionMinimalDto regionMinimalDto;
+    private CityMinimalDto cityMinimalDto;
+    private SubCityOrDivisionMinimalDto subCityOrDivisionMinimalDto;
 
     private String locality;
     private String street;

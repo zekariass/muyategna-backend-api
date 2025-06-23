@@ -13,5 +13,7 @@ public class CountryLocalizedDto {
     private String countryIsoCodeNumeric;
     private String continent;
     private String description;
+    private String currency;
+    private String taxpayerIdType;
     private boolean isGlobal;
 }

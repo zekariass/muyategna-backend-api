@@ -1,5 +1,6 @@
 package com.muyategna.backend.location.service;
 
+import com.muyategna.backend.location.dto.address.AddressCreateDto;
 import com.muyategna.backend.location.dto.address.AddressDto;
 import com.muyategna.backend.location.dto.address.AddressUpdateDto;
 import com.muyategna.backend.location.entity.*;
@@ -8,6 +9,7 @@ import com.muyategna.backend.location.repository.*;
 import com.muyategna.backend.system.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AddressServiceImpl implements AddressService {
@@ -27,6 +29,23 @@ public class AddressServiceImpl implements AddressService {
         this.subCityOrDivisionRepository = subCityOrDivisionRepository;
     }
 
+    @Transactional
+    @Override
+    public Address createAddress(AddressCreateDto addressCreateDto) {
+        Country country = countryRepository.findById(addressCreateDto.getCountryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Country not found with id: " + addressCreateDto.getCountryId()));
+        Region region = regionRepository.findById(addressCreateDto.getRegionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Region not found with id: " + addressCreateDto.getRegionId()));
+        City city = cityRepository.findById(addressCreateDto.getCityId())
+                .orElseThrow(() -> new ResourceNotFoundException("City not found with id: " + addressCreateDto.getCityId()));
+        SubCityOrDivision subCityOrDivision = subCityOrDivisionRepository.findById(addressCreateDto.getSubCityOrDivisionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Sub city or division not found with id: " + addressCreateDto.getSubCityOrDivisionId()));
+
+        Address address = AddressMapper.toEntity(addressCreateDto, country, region, city, subCityOrDivision);
+        return addressRepository.save(address);
+    }
+
+    @Transactional
     @Override
     public AddressDto updateAddress(Long addressId, AddressUpdateDto addressUpdateDto) {
 

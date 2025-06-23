@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ServiceCountryAvailabilityRepository extends JpaRepository<ServiceCountryAvailability, Long> {
 
@@ -29,5 +30,7 @@ public interface ServiceCountryAvailabilityRepository extends JpaRepository<Serv
     List<ServiceCountryAvailability> findByCountryIdAndIsActiveAndCategoryId(@Param("countryId") Long countryId,
                                                                              @Param("isActive") boolean isActive,
                                                                              @Param("categoryId") Long categoryId);
+
+    Optional<ServiceCountryAvailability> findByServiceIdAndCountryIdAndIsActiveTrue(Long serviceId, Long id);
 }
 

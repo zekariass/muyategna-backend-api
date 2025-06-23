@@ -13,8 +13,8 @@ public final class SystemConfigMapper {
                 .name(systemConfig.getName())
                 .value(systemConfig.getValue())
                 .type(systemConfig.getType())
-                .createdBy(systemConfig.getCreatedBy().getId())
-                .updatedBy(systemConfig.getUpdatedBy().getId())
+                .createdBy(systemConfig.getCreatedBy())
+                .updatedBy(systemConfig.getUpdatedBy())
                 .createdAt(systemConfig.getCreatedAt())
                 .updatedAt(systemConfig.getUpdatedAt())
                 .build();

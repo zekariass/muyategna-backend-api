@@ -7,6 +7,8 @@ import com.muyategna.backend.professional_service.entity.ServiceCategory;
 import com.muyategna.backend.professional_service.entity.ServiceTranslation;
 import com.muyategna.backend.system.exception.ResourceNotFoundException;
 
+import java.util.List;
+
 public final class ServiceMapper {
 
     public static ServiceDto toDto(Service service) {
@@ -67,5 +69,35 @@ public final class ServiceMapper {
                 .createdAt(service.getCreatedAt())
                 .updatedAt(service.getUpdatedAt())
                 .build();
+    }
+
+
+    public static ServiceLocalizedDto toLocalizedDto(Service service, ServiceTranslation serviceTranslation) {
+        if (service == null) {
+            return null;
+        }
+
+        if (serviceTranslation == null) {
+            throw new ResourceNotFoundException("ServiceTranslation cannot be null for service: " + service.getId());
+        }
+
+        return ServiceLocalizedDto.builder()
+                .id(service.getId())
+                .serviceCategoryId(service.getServiceCategory().getId())
+                .name(serviceTranslation.getName())
+                .description(serviceTranslation.getDescription())
+                .createdAt(service.getCreatedAt())
+                .updatedAt(service.getUpdatedAt())
+                .build();
+    }
+
+
+    public static List<ServiceDto> toDtoList(List<Service> services) {
+        if (services == null || services.isEmpty()) {
+            return List.of();
+        }
+        return services.stream()
+                .map(ServiceMapper::toDto)
+                .toList();
     }
 }

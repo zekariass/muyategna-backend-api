@@ -4,6 +4,7 @@ import com.muyategna.backend.common.ApiResponse;
 import com.muyategna.backend.user.exception.DuplicateUserException;
 import com.muyategna.backend.user.exception.UserCreationException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.BadRequestException;
 import org.hibernate.LazyInitializationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -105,6 +106,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateUserException.class)
     public ResponseEntity<ApiResponse<Object>> duplicateUserException(DuplicateUserException ex, HttpServletRequest request) {
         return buildApiResponse(null, HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse<Object>> badRequestException(BadRequestException ex, HttpServletRequest request) {
+        return buildApiResponse(null, HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
 

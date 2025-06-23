@@ -17,6 +17,8 @@ public final class CountryMapper {
         dto.setCountryIsoCode2(countryDto.getCountryIsoCode2());
         dto.setCountryIsoCode3(countryDto.getCountryIsoCode3());
         dto.setCountryIsoCodeNumeric(countryDto.getCountryIsoCodeNumeric());
+        dto.setCurrency(countryDto.getCurrency());
+        dto.setTaxpayerIdType(countryDto.getTaxpayerIdType());
         return dto;
     }
 
@@ -53,6 +55,8 @@ public final class CountryMapper {
         dto.setCountryIsoCodeNumeric(country.getCountryIsoCodeNumeric());
         dto.setContinent(country.getContinent());
         dto.setDescription(country.getDescription());
+        dto.setCurrency(country.getCurrency());
+        dto.setTaxpayerIdType(country.getTaxpayerIdType());
         return dto;
     }
 
@@ -74,6 +78,8 @@ public final class CountryMapper {
         dto.setCountryIsoCodeNumeric(country.getCountryIsoCodeNumeric());
         dto.setContinent(country.getContinent());
         dto.setDescription(country.getDescription());
+        dto.setCurrency(country.getCurrency());
+        dto.setTaxpayerIdType(country.getTaxpayerIdType());
         return dto;
     }
 
@@ -99,6 +105,8 @@ public final class CountryMapper {
         dto.setCountryIsoCodeNumeric(country.getCountryIsoCodeNumeric());
         dto.setCreatedAt(country.getCreatedAt());
         dto.setUpdatedAt(country.getUpdatedAt());
+        dto.setCurrency(country.getCurrency());
+        dto.setTaxpayerIdType(country.getTaxpayerIdType());
         return dto;
     }
 
@@ -122,8 +130,9 @@ public final class CountryMapper {
         country.setCountryIsoCode2(countryDto.getCountryIsoCode2());
         country.setCountryIsoCode3(countryDto.getCountryIsoCode3());
         country.setCountryIsoCodeNumeric(countryDto.getCountryIsoCodeNumeric());
+        country.setCurrency(countryDto.getCurrency());
+        country.setTaxpayerIdType(countryDto.getTaxpayerIdType());
         country.setCreatedAt(countryDto.getCreatedAt());
-        country.setUpdatedAt(countryDto.getUpdatedAt());
         return country;
     }
 
@@ -147,6 +156,8 @@ public final class CountryMapper {
         country.setCountryIsoCode3(countryCreateDto.getCountryIsoCode3());
         country.setCountryIsoCodeNumeric(countryCreateDto.getCountryIsoCodeNumeric());
         country.setGlobal(countryCreateDto.isGlobal());
+        country.setCurrency(countryCreateDto.getCurrency());
+        country.setTaxpayerIdType(countryCreateDto.getTaxpayerIdType());
         return country;
     }
 
@@ -170,6 +181,9 @@ public final class CountryMapper {
         country.setCountryIsoCode2(countryUpdateDto.getCountryIsoCode2());
         country.setCountryIsoCode3(countryUpdateDto.getCountryIsoCode3());
         country.setCountryIsoCodeNumeric(countryUpdateDto.getCountryIsoCodeNumeric());
+        country.setGlobal(countryUpdateDto.isGlobal());
+        country.setCurrency(countryUpdateDto.getCurrency());
+        country.setTaxpayerIdType(countryUpdateDto.getTaxpayerIdType());
         return country;
     }
 
