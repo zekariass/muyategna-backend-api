@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/public/professional-service/services")
+@RequestMapping("/api/v1/public/professional-service")
 @Tag(name = "Service Public Controller", description = "Controller for public access to services")
 public class ServicePublicController {
 
@@ -40,38 +40,7 @@ public class ServicePublicController {
         this.publicPaginationService = publicPaginationService;
     }
 
-    //Uncomment the following method if you want to implement paginated services by category
-//
-//    @GetMapping("/category/paged/{categoryId}")
-//    @Operation(summary = "Get all services by category for current country", description = "Get all services filtered by category for the current country")
-//    public ResponseEntity<ApiResponse<PagedModel<EntityModel<ServiceLocalizedDto>>>> getPagedServicesByCategoryForCurrentCountry(
-//            @Parameter(description = "Id of the service category to filter services") @PathVariable Long categoryId,
-//            @Parameter(description = "Page number") @RequestParam(defaultValue = "1") Integer page,
-//            @Parameter(description = "Page size") @RequestParam(required = false) Integer size,
-//            @Parameter(description = "Field to sort by") @RequestParam(defaultValue = "id") String sortBy,
-//            HttpServletRequest request) {
-//
-//
-//        Pageable pageable = publicPaginationService.getPagination(page, size, sortBy, Service.class);
-//        Page<ServiceLocalizedDto> serviceDtoList = serviceService.getPagedServicesByCategoryForCurrentCountry(categoryId, pageable);
-//        PagedModel<EntityModel<ServiceLocalizedDto>> pagedModel = pagedResourcesAssembler.toModel(
-//                serviceDtoList,
-//                dto -> assembler.toModel(dto, request)
-//        );
-//
-//        ApiResponse<PagedModel<EntityModel<ServiceLocalizedDto>>> response = ApiResponse.<PagedModel<EntityModel<ServiceLocalizedDto>>>builder()
-//                .statusCode(HttpStatus.OK.value())
-//                .success(true)
-//                .message("Services for category with id: %d retrieved successfully".formatted(categoryId))
-//                .path(request.getRequestURI())
-//                .timestamp(LocalDateTime.now())
-//                .data(pagedModel)
-//                .build();
-//        return ResponseEntity.ok(response);
-//    }
-
-
-    @GetMapping("/category/{categoryId}")
+    @GetMapping("/categories/{categoryId}/services")
     @Operation(summary = "Get all services by category for current country", description = "Get all services filtered by category for the current country")
     public ResponseEntity<ApiResponse<CollectionModel<EntityModel<ServiceLocalizedDto>>>> getServicesByCategoryForCurrentCountry(
             @Parameter(description = "Id of the service category to filter services") @PathVariable Long categoryId,
@@ -94,7 +63,7 @@ public class ServicePublicController {
     }
 
 
-    @GetMapping
+    @GetMapping("/services")
     @Operation(summary = "Get all services for current country", description = "Get all services for the current country")
     public ResponseEntity<ApiResponse<PagedModel<EntityModel<ServiceLocalizedDto>>>> getAllServicesForCurrentCountry(
             @Parameter(description = "Page number") @RequestParam(defaultValue = "1") Integer page,
@@ -122,7 +91,7 @@ public class ServicePublicController {
     }
 
 
-    @GetMapping("/{serviceId}")
+    @GetMapping("/services/{serviceId}")
     @Operation(summary = "Get a specific service by its ID ", description = "Get a specific service by its ID for the current country")
     public ResponseEntity<ApiResponse<EntityModel<ServiceLocalizedDto>>> getServiceByIdForCurrentCountry(@Parameter(description = "Id of the service to be retrieved", required = true) @PathVariable Long serviceId,
                                                                                                          HttpServletRequest request) {
@@ -140,7 +109,7 @@ public class ServicePublicController {
     }
 
 
-    @GetMapping("/slug/{serviceName}")
+    @GetMapping("/services/slug/{serviceName}")
     @Operation(summary = "Get unpaginated service by it name string", description = "Get unpaginated service by its name for the current country")
     public ResponseEntity<ApiResponse<CollectionModel<EntityModel<ServiceLocalizedDto>>>> getServicesByNameForCurrentCountry(@Parameter(description = "Id of the service to be retrieved", required = true) @RequestParam String serviceName,
                                                                                                                              @Parameter(description = "Page number") @RequestParam(defaultValue = "1") Integer page,
@@ -160,33 +129,5 @@ public class ServicePublicController {
                 .build();
         return ResponseEntity.ok(response);
     }
-
-
-// Uncomment the following method if you want to implement paginated services by name
-//
-//    @GetMapping("/slug/paged/{serviceName}")
-//    @Operation(summary = "Get paginated services by name", description = "Get paginated services by name for the current country")
-//    public ResponseEntity<ApiResponse<PagedModel<EntityModel<ServiceLocalizedDto>>>> getPagedServicesByNameForCurrentCountry(@Parameter(description = "Id of the service to be retrieved", required = true) @RequestParam String serviceName,
-//                                                                                                                               @Parameter(description = "Page number") @RequestParam(defaultValue = "1") Integer page,
-//                                                                                                                               @Parameter(description = "Page size") @RequestParam(required = false) Integer size,
-//                                                                                                                               @Parameter(description = "Field to sort by") @RequestParam(defaultValue = "id") String sortBy,
-//                                                                                                                               HttpServletRequest request) {
-//        Pageable pageable = publicPaginationService.getPagination(page, size, sortBy, Service.class);
-//        Page<ServiceLocalizedDto> serviceDto = serviceService.getPagedServicesByNameForCurrentCountry(serviceName, pageable);
-//        PagedModel<EntityModel<ServiceLocalizedDto>> pagedModels = pagedResourcesAssembler.toModel(
-//                serviceDto,
-//                dto -> assembler.toModel(dto, request));
-//
-//        ApiResponse<PagedModel<EntityModel<ServiceLocalizedDto>>> response = ApiResponse.<PagedModel<EntityModel<ServiceLocalizedDto>>>builder()
-//                .statusCode(HttpStatus.OK.value())
-//                .success(true)
-//                .message("Service with name: %s has been retrieved successfully".formatted(serviceName))
-//                .path(request.getRequestURI())
-//                .timestamp(LocalDateTime.now())
-//                .data(pagedModels)
-//                .build();
-//        return ResponseEntity.ok(response);
-//    }
-
 
 }

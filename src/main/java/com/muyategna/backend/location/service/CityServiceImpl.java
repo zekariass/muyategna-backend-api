@@ -90,11 +90,7 @@ public class CityServiceImpl implements CityService {
         log.info("Retrieving cities for regionId: {}, languageId: {}", regionId, languageId); // logg
         List<City> cities = cityRepository.findByRegionId(regionId);
         List<Long> cityIds = cities.stream().map(City::getId).toList();
-        System.out.println("================================================>>>: " + cityIds.size());
-        System.out.println("================================================>>>: " + cityIds);
         List<CityTranslation> cityTranslations = cityTranslationRepository.findByLanguageIdAndCityIdIn(languageId, cityIds);
-
-        System.out.println("================================================>>>: " + cityTranslations);
 
         /* Create a map of cityId to CityTranslation */
         Map<Long, CityTranslation> cityTranslationMap = cityTranslations
