@@ -14,7 +14,7 @@ public interface LanguageService {
 
     Optional<LanguageDto> getDefaultLanguageForCountry(CountryDto countryDto);
 
-    List<LanguageDto> getAllLanguagesByCountryPublic(CountryDto countryDto);
+    List<LanguageDto> getAllLanguagesByCountryPublic(Long countryId);
 
     LanguageDto getLanguageByLocale(String locale);
 

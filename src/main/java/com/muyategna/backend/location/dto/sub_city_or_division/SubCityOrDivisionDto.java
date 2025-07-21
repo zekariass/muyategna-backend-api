@@ -16,6 +16,8 @@ public class SubCityOrDivisionDto {
     private Long cityId;
     private String name;
     private String description;
+    private Double latitude;
+    private Double longitude;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

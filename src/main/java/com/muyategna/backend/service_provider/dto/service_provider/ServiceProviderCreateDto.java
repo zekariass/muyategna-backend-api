@@ -50,6 +50,12 @@ public class ServiceProviderCreateDto {
     private String businessLogoUrl;
     private Integer yearsOfExperience;
 
+    @NotBlank(message = "Business email is required")
+    private String businessEmail ;
+
+    @NotBlank(message = "Business phone is required")
+    private String businessPhone;
+
 
     @NotNull(message = "Service Provider Tax Info is required")
     private ServiceProviderTaxInfoCreateDto serviceProviderTaxInfoCreateDto;

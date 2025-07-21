@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -22,4 +23,5 @@ public class AddOnPlanCreateDto {
     private LocalDateTime expiresAt;
     private Boolean isDefault;
     private Boolean isActive;
+    private Map<String, String> extraData;
 }

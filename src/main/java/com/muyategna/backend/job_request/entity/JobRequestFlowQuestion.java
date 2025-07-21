@@ -10,7 +10,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * Represents a question in a job request flow.
@@ -53,9 +52,9 @@ public class JobRequestFlowQuestion {
     @Column(name = "is_terminal", nullable = false)
     private boolean isTerminal = false;
 
-    // List of answers associated with this flow question
-    @OneToMany(mappedBy = "flowQuestion", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    List<JobQuestionAnswer> answers;
+//    // List of answers associated with this flow question
+//    @OneToMany(mappedBy = "flowQuestion", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+//    List<JobQuestionAnswer> answers;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

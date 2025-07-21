@@ -1,7 +1,7 @@
 package com.muyategna.backend.job_request.dto.job_request;
 
+import com.muyategna.backend.job_request.dto.job_start_time_window.JobStartTimeWindowDto;
 import com.muyategna.backend.job_request.enums.JobStatus;
-import com.muyategna.backend.job_request.enums.WhenToStartJob;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
@@ -20,10 +22,11 @@ public class JobRequestDto {
     private Long customerId;
     private String description;
     private BigDecimal budget;
-    private WhenToStartJob whenToStartJob;
+    private JobStartTimeWindowDto startTimeWindow;
     private JobStatus status;
     private Long addressId;
-    //    private List<Long> answers;
+    private List<Map<String, Object>> questionAnswers;
+    private Map<String, Object> extraData;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

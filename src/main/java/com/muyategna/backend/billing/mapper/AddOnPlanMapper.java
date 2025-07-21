@@ -23,6 +23,7 @@ public final class AddOnPlanMapper {
                 .expiresAt(addOnPlan.getExpiresAt())
                 .isDefault(addOnPlan.getIsDefault())
                 .isActive(addOnPlan.getIsActive())
+                .extraData(addOnPlan.getExtraData())
                 .createdAt(addOnPlan.getCreatedAt())
                 .updatedAt(addOnPlan.getUpdatedAt())
                 .build();
@@ -39,6 +40,7 @@ public final class AddOnPlanMapper {
                 .priceAmount(addOnPlan.getPriceAmount())
                 .creditsIncluded(addOnPlan.getCreditsIncluded())
                 .sortOrder(addOnPlan.getSortOrder())
+                .extraData(addOnPlan.getExtraData())
 //                .eligibleDiscountPlan(DiscountPlanMapper.toLocalizedDto(addOnPlan.get()))
                 .build();
 
@@ -68,6 +70,7 @@ public final class AddOnPlanMapper {
         addOnPlan.setExpiresAt(addOnPlanDto.getExpiresAt());
         addOnPlan.setIsDefault(addOnPlanDto.getIsDefault());
         addOnPlan.setIsActive(addOnPlanDto.getIsActive());
+        addOnPlan.setExtraData(addOnPlanDto.getExtraData());
         return addOnPlan;
     }
 
@@ -86,6 +89,7 @@ public final class AddOnPlanMapper {
         addOnPlan.setExpiresAt(addOnPlanDto.getExpiresAt());
         addOnPlan.setIsDefault(addOnPlanDto.getIsDefault());
         addOnPlan.setIsActive(addOnPlanDto.getIsActive());
+        addOnPlan.setExtraData(addOnPlanDto.getExtraData());
         return addOnPlan;
     }
 
@@ -104,6 +108,7 @@ public final class AddOnPlanMapper {
         addOnPlan.setExpiresAt(addOnPlanDto.getExpiresAt());
         addOnPlan.setIsDefault(addOnPlanDto.getIsDefault());
         addOnPlan.setIsActive(addOnPlanDto.getIsActive());
+        addOnPlan.setExtraData(addOnPlanDto.getExtraData());
         return addOnPlan;
     }
 

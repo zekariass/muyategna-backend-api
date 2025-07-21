@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS country (
     description TEXT,                            -- Description or additional information about the country
     taxpayer_id_type VARCHAR(50) NOT NULL,              -- Type of taxpayer ID (e.g., 'TIN', 'VAT')
     currency VARCHAR(3) NOT NULL,                        -- Currency used in the country (e.g., 'ETB' for Ethiopian Birr)
+    geo_point GEOGRAPHY(POINT, 4326) NOT NULL, -- Geographic point for the country (latitude, longitude)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of creation
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Timestamp of last update
 );
@@ -22,6 +23,8 @@ CREATE TABLE IF NOT EXISTS country (
 CREATE INDEX idx_name ON country(name);
 CREATE INDEX idx_country_iso_code2 ON country(iso_code2);
 CREATE UNIQUE INDEX idx_only_one_global_country ON country ((is_global)) WHERE is_global IS TRUE;
+CREATE INDEX idx_country_geo_point ON address USING GIST (geo_point);
+
 
 CREATE TABLE IF NOT EXISTS language (
     language_id BIGSERIAL PRIMARY KEY,
@@ -37,13 +40,12 @@ CREATE TABLE IF NOT EXISTS language (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_language_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE CASCADE,
-    CONSTRAINT unique_language_country_code UNIQUE (country_id, code) -- Ensure unique language codes per country
+    CONSTRAINT unique_language_country_locale UNIQUE (country_id, locale) -- Ensure unique language codes per country
 );
 
 -- Create an index on the 'code' column for fast lookups by language code
-CREATE UNIQUE INDEX idx_language_code ON language(code);
+CREATE UNIQUE INDEX idx_language_locale ON language(locale);
 CREATE INDEX idx_language_is_default ON language(is_default);
-CREATE INDEX idx_language_locale ON language(locale);
 CREATE UNIQUE INDEX idx_unique_default_language_per_country ON language (country_id) WHERE is_default IS TRUE;
 CREATE UNIQUE INDEX idx_only_one_global_language ON language ((is_global)) WHERE is_global IS TRUE;
 
@@ -76,6 +78,7 @@ CREATE TABLE IF NOT EXISTS region (
     country_id BIGINT NOT NULL,               -- Foreign Key to the Country table
     name VARCHAR(100) NOT NULL,                  -- Name of the region (e.g., 'California')
     description TEXT,                            -- Description of the region
+    geo_point GEOGRAPHY(POINT, 4326) NOT NULL, -- Geographic point for the region (latitude, longitude)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of creation
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of last update
     CONSTRAINT fk_region_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE CASCADE,
@@ -83,6 +86,7 @@ CREATE TABLE IF NOT EXISTS region (
 );
 
 CREATE INDEX idx_region_country_id ON region(country_id);
+CREATE INDEX idx_region_geo_point ON address USING GIST (geo_point);
 
 
 CREATE TABLE IF NOT EXISTS region_translation (
@@ -112,6 +116,7 @@ CREATE TABLE IF NOT EXISTS city (
     region_id BIGINT NOT NULL,                   -- Foreign Key to the Region table
     name VARCHAR(100) NOT NULL,             -- Name of the city (e.g., 'Addis Ababa')
     description TEXT,                            -- Description of the city
+    geo_point GEOGRAPHY(POINT, 4326) NOT NULL, -- Geographic point for the city (latitude, longitude)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of creation
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of last update
     CONSTRAINT fk_city_region FOREIGN KEY (region_id) REFERENCES region(region_id) ON DELETE CASCADE, -- Reference to Region table
@@ -120,6 +125,7 @@ CREATE TABLE IF NOT EXISTS city (
 
 CREATE INDEX idx_city_region_id ON city(region_id);
 CREATE INDEX idx_city_city_name ON city(name);
+CREATE INDEX idx_city_geo_point ON address USING GIST (geo_point);
 
 
 CREATE TABLE IF NOT EXISTS city_translation (
@@ -152,12 +158,15 @@ CREATE TABLE IF NOT EXISTS sub_city_or_division (
     description TEXT,                            -- Description of the city
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of creation
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of last update
+    geo_point GEOGRAPHY(POINT, 4326) NOT NULL, -- Geographic point for the sub-city (latitude, longitude)
+
     CONSTRAINT sub_city_or_division_city_id FOREIGN KEY (city_id) REFERENCES city(city_id) ON DELETE CASCADE, -- Reference to Region table
     CONSTRAINT unique_sub_city_name_city_id UNIQUE (name, city_id) -- Ensure unique city names within a region
 );
 
 CREATE INDEX idx_sub_city_or_division_city_id ON sub_city_or_division(city_id);
 CREATE INDEX idx_sub_city_or_division_name ON sub_city_or_division(name);
+CREATE INDEX idx_sub_city_or_division_geo_point ON address USING GIST (geo_point);
 
 
 CREATE TABLE IF NOT EXISTS sub_city_or_division_translation (
@@ -190,7 +199,8 @@ CREATE TABLE IF NOT EXISTS address (
     street VARCHAR(255),                        -- Street name
     landmark VARCHAR(255),                      -- Landmark for easy identification
     postal_code VARCHAR(20),                    -- Postal code (e.g., '1234')
-    geo_point GEOGRAPHY(POINT, 4326),
+    geo_point GEOGRAPHY(POINT, 4326) NOT NULL, -- Geographic point for the address (latitude, longitude)
+    is_default_geo_point BOOLEAN DEFAULT TRUE,  -- Flag to indicate if this is the default geo-point populated from the nearest location entity
     full_address TEXT,                          -- Full address
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of address creation
     CONSTRAINT fk_address_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE CASCADE, -- Reference to Country table
@@ -208,7 +218,6 @@ CREATE INDEX idx_address_locality ON address(locality);
 CREATE INDEX idx_address_geo_point ON address USING GIST (geo_point);
 
 
-
 -- Create UserProfile Table
 CREATE TABLE IF NOT EXISTS user_profile (
     user_profile_id BIGSERIAL PRIMARY KEY,
@@ -218,7 +227,8 @@ CREATE TABLE IF NOT EXISTS user_profile (
     last_name VARCHAR(100),
     phone_number VARCHAR(20),
     email VARCHAR(100) UNIQUE,
-    address_id BIGINT,
+--    address_id BIGINT,
+    country_id BIGINT NOT NULL,
     profile_picture_url TEXT,
     default_language_id BIGINT NOT NULL, -- Foreign key to the language table
     last_login TIMESTAMP,
@@ -226,13 +236,13 @@ CREATE TABLE IF NOT EXISTS user_profile (
     is_staff BOOLEAN DEFAULT FALSE,
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_user_profile_address FOREIGN KEY (address_id) REFERENCES address(address_id) ON DELETE SET NULL,
+    CONSTRAINT fk_user_profile_country FOREIGN KEY (country_id) REFERENCES country(country_id),
     CONSTRAINT fk_user_profile_language FOREIGN KEY (default_language_id) REFERENCES language(language_id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_user_profile_email ON user_profile(email);
 CREATE INDEX idx_user_profile_keycloak_user_id ON user_profile(keycloak_user_id);
-CREATE INDEX idx_user_profile_address_id ON user_profile(address_id);
+CREATE INDEX idx_user_profile_country_id ON user_profile(country_id);
 
 --======================================================================================
 --SERVICE RELATED TABLES
@@ -318,6 +328,21 @@ CREATE INDEX idx_sca_country_id ON service_country_availability(country_id);
 CREATE INDEX idx_sca_price_model ON service_country_availability(price_model);
 
 
+CREATE TABLE service_credit_cost --service_credit_plan (
+    id SERIAL PRIMARY KEY,
+    service_id BIGINT NOT NULL UNIQUE,
+--    credits_per_lead DECIMAL(10, 2) NOT NULL CHECK (credits_per_lead > 0),
+
+    payg_credits_per_lead DECIMAL(10, 2) NOT NULL CHECK (payg_credits_per_lead >= 0),
+    subs_credits_per_lead DECIMAL(10, 2) NOT NULL CHECK (subs_credits_per_lead >= 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_service_credit_plan_service FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE,
+);
+
+CREATE INDEX idx_service_credit_plan_service_id ON service_credit_plan(service_id);
+
 --================================================================================
 -- JOB QUESTION FLOW RELATED TABLES
 --================================================================================
@@ -369,10 +394,10 @@ CREATE TABLE IF NOT EXISTS job_request_flow_question (
     CHECK (
         order_index > 0
     ),
-    CONSTRAINT chk_start_xor_terminal
-    CHECK (
-        NOT (is_start = TRUE AND is_terminal = TRUE)
-    )
+--    CONSTRAINT chk_start_xor_terminal
+--    CHECK (
+--        NOT (is_start = TRUE AND is_terminal = TRUE)
+--    )
 );
 
 CREATE INDEX idx_job_request_flow_question_flow_id ON job_request_flow_question(flow_id);
@@ -455,7 +480,7 @@ CREATE TABLE IF NOT EXISTS job_question_transition (
     CONSTRAINT fk_job_question_transition_option FOREIGN KEY (option_id) REFERENCES job_question_option(id) ON DELETE SET NULL,
     CONSTRAINT uq_job_question_transition UNIQUE (flow_id, from_flow_question_id, option_id),
 --    CONSTRAINT uq_job_question_transition_option UNIQUE (flow_id, from_flow_question_id, to_flow_question_id),
-    CONSTRAINT check_job_question_from_not_equal_to CHECK (from_flow_question_id != to_flow_question_id);
+    CONSTRAINT check_job_question_from_not_equal_to CHECK (from_flow_question_id != to_flow_question_id)
 );
 
 CREATE INDEX idx_job_question_transition_flow ON job_question_transition(flow_id);
@@ -466,24 +491,80 @@ CREATE INDEX idx_job_question_transition_flow_id_from_question_id_option_id ON j
 
 
 CREATE TYPE job_status_enum AS ENUM (
-    'DRAFT', 'SUBMITTED', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED'
+    'OPEN',
+    'REOPEN',
+    'COMPLETED',
+    'CANCELLED',
+    'HIDDEN',
+    'PENDING_REVIEW',
+    'EXPIRED',
+    'PAUSED'
 );
 
-CREATE TYPE when_to_start_job_enum AS ENUM (
-    'IMMEDIATELY',
-    'WITHIN_2_DAYS',
-    'WITHIN_4_DAYS',
-    'WITHIN_A_WEEK',
-    'WITHIN_2_WEEKS',
-    'WITHIN_3_WEEKS',
-    'WITHIN_A_MONTH',
-    'WITHIN_2_MONTHS',
-    'WITHIN_3_MONTHS',
-    'WITHIN_6_MONTHS',
-    'WITHIN_1_YEAR',
-    'ANY_TIME',
-    'AGREEMENT'
+--CREATE TYPE when_to_start_job_enum AS ENUM (
+--    'IMMEDIATELY',
+--    'WITHIN_2_DAYS',
+--    'WITHIN_4_DAYS',
+--    'WITHIN_A_WEEK',
+--    'WITHIN_2_WEEKS',
+--    'WITHIN_3_WEEKS',
+--    'WITHIN_A_MONTH',
+--    'WITHIN_2_MONTHS',
+--    'WITHIN_3_MONTHS',
+--    'WITHIN_6_MONTHS',
+--    'WITHIN_1_YEAR',
+--    'ANY_TIME',
+--    'AGREEMENT'
+--);
+
+CREATE TABLE job_start_time_window (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(100) NOT NULL UNIQUE, -- e.g., 'WITHIN_2_DAYS'
+    label TEXT NOT NULL,               -- e.g., 'Within 2 Days'
+    min_offset_days INTEGER NOT NULL,  -- e.g., 0
+    max_offset_days INTEGER NOT NULL,  -- e.g., 2
+    is_active boolean default true,
+    CHECK (min_offset_days <= max_offset_days),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_job_start_window_code ON job_start_time_window(code);
+CREATE INDEX idx_job_start_window_is_active ON job_start_time_window(is_active);
+
+
+-- Enum for type
+CREATE TYPE rejection_reason_type_enum AS ENUM ('JOB_REQUEST', 'JOB_CLAIM', 'JOB_QUOTE');
+
+-- Table for rejection reasons
+CREATE TABLE rejection_reason (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE, -- e.g. 'LOW_QUALITY'
+    reason_type rejection_reason_type_enum NOT NULL,
+    is_active boolean default true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table for translations of rejection reasons
+CREATE TABLE rejection_reason_translation (
+    id BIGSERIAL PRIMARY KEY,
+    reason_id BIGINT NOT NULL,
+    language_id BIGINT NOT NULL, -- Foreign key to language
+    display_title VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_rejection_reason_translation_reason FOREIGN KEY (reason_id) REFERENCES rejection_reason(id) ON DELETE CASCADE,
+    CONSTRAINT fk_rejection_reason_translation_language FOREIGN KEY (language_id) REFERENCES language(language_id) ON DELETE CASCADE,
+    CONSTRAINT uq_rejection_reason_translation_reason_language
+    UNIQUE (reason_id, language_id) -- one translation per language per reason
+);
+
+CREATE INDEX idx_rejection_reason_translation_reason_id ON rejection_reason_translation(reason_id);
+CREATE INDEX idx_rejection_reason_translation_language ON rejection_reason_translation(language_id);
+
 
 CREATE TABLE IF NOT EXISTS job_request (
     id BIGSERIAL PRIMARY KEY,
@@ -491,15 +572,21 @@ CREATE TABLE IF NOT EXISTS job_request (
     customer_id BIGINT NOT NULL,
     description TEXT,
     budget NUMERIC,
-    when_to_start when_to_start_job_enum NOT NULL,
-    status job_status_enum NOT NULL DEFAULT 'DRAFT',
+    start_window_id BIGINT NOT NULL, -- Foreign key to job_start_window
+    question_answers JSONB,
+--    when_to_start when_to_start_job_enum NOT NULL,
+    status job_status_enum NOT NULL DEFAULT 'PENDING',
     address_id BIGINT,
+    extra_data JSONB,
+    rejection_reason_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_job_request_service FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE RESTRICT,
     CONSTRAINT fk_job_request_customer FOREIGN KEY (customer_id) REFERENCES user_profile(user_profile_id) ON DELETE RESTRICT,
-    CONSTRAINT fk_job_request_address FOREIGN KEY (address_id) REFERENCES address(address_id) ON DELETE SET NULL
+    CONSTRAINT fk_job_request_address FOREIGN KEY (address_id) REFERENCES address(address_id) ON DELETE SET NULL,
+    CONSTRAINT fk_job_request_start_window FOREIGN KEY (start_window_id) REFERENCES job_start_window(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_job_request_rejection_reason FOREIGN KEY (rejection_reason_id) REFERENCES rejection_reason(id) ON DELETE SET NULL
 );
 
 -- Indexes
@@ -507,12 +594,32 @@ CREATE INDEX idx_job_request_service ON job_request(service_id);
 CREATE INDEX idx_job_request_customer ON job_request(customer_id);
 CREATE INDEX idx_job_request_status ON job_request(status);
 CREATE INDEX idx_job_request_service_id_status ON job_request(service_id, status);
+CREATE INDEX idx_job_request_rejection_reason_id ON job_request(rejection_reason_id);
 
+
+CREATE TYPE storage_provider_enum AS ENUM (
+    'AWS_S3',
+    'GOOGLE_CLOUD_STORAGE',
+    'AZURE_BLOB',
+    'CLOUDFLARE_R2',
+    'BACKBLAZE_B2',
+    'DIGITALOCEAN_SPACES'
+);
+
+CREATE TYPE media_type_enum AS ENUM (
+  'IMAGE',
+  'VIDEO',
+  'AUDIO',
+  'DOCUMENT'
+);
 
 CREATE TABLE job_request_media (
     id BIGSERIAL PRIMARY KEY,
     request_id BIGINT NOT NULL,
     media_url TEXT NOT NULL,
+    media_type media_type_enum not null default 'IMAGE',
+    storage_provider storage_provider_enum,
+    extra_data JSONB;
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_jrm_request FOREIGN KEY (request_id) REFERENCES job_request(id) ON DELETE CASCADE
@@ -567,7 +674,7 @@ CREATE TABLE IF NOT EXISTS service_provider (
     country_id BIGINT,
     business_address_id BIGINT,
     num_employees INT,
-    max_travel_distance_in_km NUMERIC(4, 2),
+    max_travel_distance_in_km NUMERIC(6, 2),
     portfolio_url TEXT,
     portfolio_type portfolio_type_enum NOT NULL DEFAULT 'WEBSITE',
     business_logo_url TEXT,
@@ -578,14 +685,48 @@ CREATE TABLE IF NOT EXISTS service_provider (
     is_verified BOOLEAN DEFAULT false,
     is_active BOOLEAN DEFAULT true,
     is_blocked BOOLEAN DEFAULT false,
+
+    business_email VARCHAR(100) NOT NULL UNIQUE,
+    business_phone VARCHAR(50) NOT NULL UNIQUE,
+    tiktok VARCHAR(255),
+    whatsApp VARCHAR(50),
+    facebook VARCHAR(255),
+    linkedin VARCHAR(255),
+    instagram VARCHAR(255),
+    website VARCHAR(255),
+
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_service_provider_business_address FOREIGN KEY (business_address_id) REFERENCES address(address_id) ON DELETE SET NULL,
     CONSTRAINT fk_service_provider_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE SET NULL,
-    CONSTRAINT chk_number_of_employees CHECK (service_provider_type != 'FREELANCER' OR num_employees = 1),
+    CONSTRAINT chk_number_of_employees CHECK (service_provider_type != 'FREELANCER' OR num_employees = 1)
 );
 
 CREATE INDEX idx_service_provider_business_address_id ON service_provider(business_address_id);
+
+
+CREATE TABLE service_provider_statistics (
+    id BIGSERIAL PRIMARY KEY,
+    provider_id BIGINT NOT NULL UNIQUE,
+    total_claims INT DEFAULT 0,
+    avg_claim_time_in_mins NUMERIC(15, 4) DEFAULT 0,
+    avg_rating NUMERIC(2, 2) DEFAULT 0,
+    completed_leads INT DEFAULT 0,
+    total_quotes INT DEFAULT 0,
+    accepted_quotes INT DEFAULT 0,
+    daily_claim_count INT DEFAULT 0,
+    weekly_claim_count INT DEFAULT 0,
+    two_weekly_claim_count INT DEFAULT 0,
+    monthly_claim_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_service_provider_statistics_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_service_provider_statistics_provider ON service_provider_statistics(provider_id);
+
+
 
 CREATE TABLE IF NOT EXISTS service_employee (
     id BIGSERIAL PRIMARY KEY,
@@ -633,7 +774,8 @@ CREATE TABLE IF NOT EXISTS service_provider_services (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_sps_service FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE,
-    CONSTRAINT fk_sps_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE
+    CONSTRAINT fk_sps_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE.
+    CONSTRAINT uq_sps_service_provider UNIQUE (service_id, provider_id)
 );
 
 CREATE INDEX idx_sps_provider ON service_provider_services(provider_id);
@@ -705,7 +847,7 @@ CREATE TABLE legal_document (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_legal_document_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE SET NULL,
-    CONSTRAINT unique_legal_document_type_country_id UNIQUE (name_internal, country_id)
+    CONSTRAINT unique_legal_document_type_country_id UNIQUE (display_name, country_id)
 );
 
 CREATE INDEX idx_legal_document_country_id ON legal_document(country_id);
@@ -751,12 +893,39 @@ CREATE INDEX idx_spa_document_id_provider_id ON service_provider_agreement(docum
 --CREATE TYPE calculation_method_enum AS ENUM ('PERCENTAGE', 'FIXED', 'PERCENTAGE_PLUS_FIXED');
 CREATE TYPE payer_entity_type_enum AS ENUM ('SERVICE_PROVIDER', 'CUSTOMER');
 CREATE TYPE product_type_enum AS ENUM ('SUBSCRIPTION', 'ADD_ON');
-CREATE TYPE payment_intent_status_enum AS ENUM ('PENDING', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'EXPIRED');
-CREATE TYPE transaction_status_enum AS ENUM ('INITIATED', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'TIMEOUT', 'DISPUTED', 'REFUNDED');
-CREATE TYPE invoice_status_enum AS ENUM ('ISSUED', 'PAID', 'CANCELLED');
+--CREATE TYPE payment_intent_status_enum AS ENUM ('PENDING', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'EXPIRED');
+CREATE TYPE payment_intent_status_enum AS ENUM (
+    'PENDING',
+    'PROCESSED',
+    'CANCELLED',
+    'EXPIRED'
+);
+
+CREATE TYPE transaction_status_enum AS ENUM (
+    'SUCCEEDED',
+    'FAILED',
+    'TIMEOUT',
+    'DISPUTED',
+    'REFUNDED'
+);
+
+CREATE TYPE accounting_type_enum AS ENUM (
+    'DR',
+    'CR'
+);
+
+CREATE TYPE txn_type_enum AS ENUM (
+    'ORIGINAL',  -- The initial transaction
+    'DISPUTE',   -- A transaction under dispute
+    'REFUND'     -- A refund issued for a previous transaction
+);
+
+
+--CREATE TYPE transaction_status_enum AS ENUM ('INITIATED', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'TIMEOUT', 'DISPUTED', 'REFUNDED');
+CREATE TYPE invoice_status_enum AS ENUM ('PAID', 'CANCELLED');
 CREATE TYPE billing_cycle_enum AS ENUM ('DAY', 'WEEK', 'MONTH', 'YEAR');
 CREATE TYPE coupon_status_enum AS ENUM ('ACTIVE', 'INACTIVE', 'REDEEMED', 'EXPIRED');
-CREATE type discount_user_type AS enum('NEW_USER', 'EXISTING_USER', 'ANY_USER');
+CREATE TYPE discount_user_type AS enum('NEW_USER', 'EXISTING_USER', 'ANY_USER');
 
 
 -- TABLES
@@ -843,10 +1012,18 @@ CREATE TABLE transaction (
     txn_reference VARCHAR(255) UNIQUE,
     currency VARCHAR(10) NOT NULL,
     description TEXT,
+
+    accounting_type accounting_type_enum NOT NULL,
+    refunded_amount NUMERIC(15,4) NOT NULL DEFAULT 0.00,
+    original_txn_id BIGINT,
+    response_code VARCHAR(50),
+    txn_type txn_type_enum NOT NULL DEFAULT 'ORIGINAL',
+
     status transaction_status_enum NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_transaction_payment_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intent(id) ON DELETE SET NULL,
-    CONSTRAINT fk_transaction_payment_method FOREIGN KEY (payment_method_id) REFERENCES payment_method(id) ON DELETE SET NULL
+    CONSTRAINT fk_transaction_payment_method FOREIGN KEY (payment_method_id) REFERENCES payment_method(id) ON DELETE SET NULL,
+    CONSTRAINT fk_transaction_original_txn FOREIGN KEY (original_txn_id) REFERENCES transaction(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_transaction_payment_intent ON transaction(payment_intent_id);
@@ -868,6 +1045,7 @@ CREATE TABLE service_provider_invoice (
     currency VARCHAR(10) NOT NULL,
     status invoice_status_enum NOT NULL,
     is_locked BOOLEAN NOT NULL DEFAULT FALSE, -- if the invoice is locked, it cannot be modified
+    extra_data JSONB,
     issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_invoice_transaction FOREIGN KEY (transaction_id) REFERENCES transaction(id),
@@ -896,6 +1074,7 @@ CREATE TABLE service_provider_invoice_item (
     sub_total_amount NUMERIC(15,4) NOT NULL,
     tax_amount NUMERIC(15,4) NOT NULL,
     total_amount NUMERIC(15,4) NOT NULL,
+    extra_data JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_invoice_item_invoice FOREIGN KEY (parent_invoice_id) REFERENCES service_provider_invoice(id) ON DELETE CASCADE,
@@ -917,16 +1096,14 @@ CREATE TABLE add_on_plan (
     expires_at TIMESTAMP,
     is_default BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    extra_data JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_add_on_plan_service FOREIGN KEY (service_id) REFERENCES service(id),
-    CONSTRAINT fk_add_on_plan_country FOREIGN KEY (country_id) REFERENCES country(country_id),
-    CONSTRAINT uq_add_on_plan_service_plan_order UNIQUE (service_id, plan_order)
+    CONSTRAINT fk_add_on_plan_country FOREIGN KEY (country_id) REFERENCES country(country_id)
 );
 
-CREATE INDEX idx_addonplan_service_country ON add_on_plan(service_id, country_id);
-CREATE INDEX idx_addonplan_service_country_is_active ON add_on_plan(service_id, country_id, is_active);
+CREATE INDEX idx_addonplan_country_is_active ON add_on_plan(country_id, is_active);
 
 
 CREATE TABLE add_on_plan_translation (
@@ -944,38 +1121,75 @@ CREATE TABLE add_on_plan_translation (
 CREATE INDEX idx_add_on_plan_trans_add_on_plan ON add_on_plan_translation(add_on_plan_id);
 CREATE INDEX idx_add_on_plan_trans_language ON add_on_plan_translation(language_id);
 
-CREATE TABLE service_provider_add_on (
-    id BIGSERIAL PRIMARY KEY,
-    provider_id BIGINT NOT NULL,
---    payment_intent_id BIGINT NOT NULL,
-    add_on_plan_id BIGINT NOT NULL,
-    initial_credits DECIMAL(10,2) NOT NULL CHECK(initial_credits >= 0),
-    used_credits DECIMAL(10,2) NOT NULL CHECK(used_credits >= 0),
-    purchased_at TIMESTAMP NOT NULL,
---    upgraded_from BIGINT,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    expires_at TIMESTAMP,
-    CONSTRAINT fk_sp_add_on_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id),
-    CONSTRAINT fk_sp_add_on_payment_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intent(id),
-    CONSTRAINT fk_sp_add_on_plan FOREIGN KEY (add_on_plan_id) REFERENCES add_on_plan(id),
-);
-
-CREATE INDEX idx_sp_add_on_provider ON service_provider_add_on(provider_id);
-
-
 CREATE TABLE add_on_transaction (
     id BIGSERIAL PRIMARY KEY,
-    transaction_id BIGINT NOT NULL,
-    service_provider_add_on_id BIGINT NOT NULL,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    provider_id BIGINT NOT NULL,
+    add_on_plan_id BIGINT,
 
-    CONSTRAINT fk_add_on_transaction_transaction FOREIGN KEY (transaction_id) REFERENCES transaction(id),
-    CONSTRAINT fk_add_on_transaction_service_provider_add_on FOREIGN KEY (service_provider_add_on_id) REFERENCES service_provider_add_on(id)
+    credits_amount DECIMAL(10,2) default 0.00,
+    transaction_id BIGINT NOT NULL, -- Reference to the transaction that purchased this add-on
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    extra_data JSONB,
+    CONSTRAINT fk_add_on_txn_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+    CONSTRAINT fk_add_on_txn_plan FOREIGN KEY (add_on_plan_id) REFERENCES add_on_plan(id) ON DELETE SET NULL,
+    CONSTRAINT fk_add_on_txn_transaction FOREIGN KEY (transaction_id) REFERENCES transaction(id) ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_add_on_transaction_transaction ON add_on_transaction(transaction_id);
-CREATE INDEX idx_add_on_transaction_service_provider_add_on ON add_on_transaction(service_provider_add_on_id);
+CREATE INDEX idx_add_on_txn_provider ON add_on_transaction(provider_id);
+CREATE INDEX idx_add_on_txn_plan ON add_on_transaction(add_on_plan_id);
+CREATE INDEX idx_add_on_txn_transaction ON add_on_transaction(transaction_id);
+
+--
+--CREATE TABLE add_on_transaction (
+--    id BIGSERIAL PRIMARY KEY,
+--    transaction_id BIGINT NOT NULL,
+--    service_provider_add_on_id BIGINT NOT NULL,
+--    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--
+--    CONSTRAINT fk_add_on_transaction_transaction FOREIGN KEY (transaction_id) REFERENCES transaction(id),
+--    CONSTRAINT fk_add_on_transaction_service_provider_add_on FOREIGN KEY (service_provider_add_on_id) REFERENCES service_provider_add_on(id)
+--);
+--
+--CREATE INDEX idx_add_on_transaction_transaction ON add_on_transaction(transaction_id);
+--CREATE INDEX idx_add_on_transaction_service_provider_add_on ON add_on_transaction(service_provider_add_on_id);
+
+
+CREATE TABLE service_provider_credit (
+    id BIGSERIAL PRIMARY KEY,
+    provider_id BIGINT NOT NULL,
+    balance NUMERIC(15, 4) NOT NULL DEFAULT 0.00,
+    auto_add_on_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    extra_data JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMP,
+
+    CONSTRAINT fk_sp_credit_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+    CONSTRAINT chk_sp_credit_balance CHECK (balance >= 0.00),
+    CONSTRAINT uq_sp_credit_provider UNIQUE (provider_id)
+);
+
+CREATE INDEX idx_service_provider_credit_provider_id ON service_provider_credit(provider_id);
+
+
+CREATE TABLE service_provider_credit_usage (
+    id BIGSERIAL PRIMARY KEY,
+--    usage_ref VARCHAR(50) NOT NULL UNIQUE,
+    provider_id BIGINT NOT NULL,
+--    service_provider_lead_id BIGINT NOT NULL,
+    job_lead_claim_id BIGINT NOT NULL,
+    used_credit_amount NUMERIC(15, 4) NOT NULL CHECK (used_credit_amount >= 0),
+    extra_data JSONB,
+    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_credit_usage_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+    CONSTRAINT fk_credit_usage_job_lead_claim FOREIGN KEY (job_lead_claim_id) REFERENCES job_lead_claim(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_credit_usage_provider_id ON service_provider_credit_usage(provider_id);
+CREATE INDEX idx_credit_usage_claim_id ON service_provider_credit_usage(job_lead_claim_id);
 
 
 
@@ -988,19 +1202,27 @@ CREATE TABLE subscription_plan (
     billing_cycle billing_cycle_enum NOT NULL,
     billing_cycle_count INT NOT NULL DEFAULT 1 CHECK(billing_cycle_count > 0),
     trial_period_days INT NOT NULL DEFAULT 0 CHECK(trial_period_days >= 0),
-    credits_included DECIMAL(10,2) NOT NULL DEFAULT 0,
     sort_order INT NOT NULL DEFAULT 0,
     is_default BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    slug VARCHAR(255) UNIQUE NOT NULL,
+--    slug VARCHAR(255) UNIQUE NOT NULL,
+
+--    leads_included INTEGER DEFAULT 0,
+
+    upgradeable BOOLEAN DEFAULT TRUE,
+    downgradeable BOOLEAN DEFAULT TRUE,
+    extra_data JSONB,
+
+    -- NEW FIELDS
+    credits_included DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (credits_included >= 0),
+    featuresIncluded JSONB,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_subscription_plan_country FOREIGN KEY (country_id) REFERENCES country(country_id),
     CONSTRAINT uq_subscription_plan_name_country UNIQUE (name, country_id)
 );
-
-CREATE INDEX idx_subscription_plan_slug ON subscription_plan(slug);
 
 
 CREATE TABLE subscription_plan_translation (
@@ -1020,67 +1242,157 @@ CREATE INDEX idx_subscription_plan_trans_subscription_plan ON subscription_plan_
 CREATE INDEX idx_subscription_plan_trans_language ON subscription_plan_translation(language_id);
 
 
+--CREATE TABLE service_provider_subscription (
+--    id BIGSERIAL PRIMARY KEY,
+--    provider_id BIGINT NOT NULL,
+--    subscription_plan_id BIGINT,
+----    payment_intent_id BIGINT NOT NULL,
+--    initial_credits DECIMAL(10,2) NOT NULL CHECK (initial_credits >= 0),
+--    used_credits DECIMAL(10,2) NOT NULL CHECK (used_credits >= 0),
+--    subscribed_at TIMESTAMP NOT NULL,
+----    valid_until TIMESTAMP,
+--    upgraded_from BIGINT,
+--    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+--    expires_at TIMESTAMP,
+--    CONSTRAINT fk_sp_sub_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+--    CONSTRAINT fk_sp_sub_subscription_plan FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plan(id) ON DELETE SET NULL,
+----    CONSTRAINT fk_sp_sub_payment_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intent(id),
+--    CONSTRAINT fk_sp_sub_upgraded_from FOREIGN KEY (upgraded_from) REFERENCES service_provider_subscription(id) ON DELETE SET NULL
+--
+--);
+--CREATE UNIQUE INDEX ux_one_active_subscription_per_provider
+--ON service_provider_subscription(provider_id)
+--WHERE is_active = true; -- Only one active subscription per provider
+--CREATE INDEX idx_sp_sub_provider ON service_provider_subscription(provider_id);
+
+--CREATE TYPE renewal_status_enum AS ENUM (
+--    'PENDING',
+----    'COMPLETED',
+--    'RENEWED',
+--    'FAILED',
+--    'CANCELLED',
+--
+--    'EXPIRED'
+--);
+
+CREATE TYPE renewal_status_enum AS ENUM (
+    'PENDING',     -- Waiting for payment or renewal process
+    'SUCCESSFUL',  -- Successfully renewed (replaces "RENEWED")
+    'FAILED',      -- Attempted but failed (e.g., payment failure)
+    'CANCELLED',   -- Cancelled by user or system
+    'EXPIRED'      -- Allowed to expire without action
+);
+
+
 CREATE TABLE service_provider_subscription (
     id BIGSERIAL PRIMARY KEY,
     provider_id BIGINT NOT NULL,
-    subscription_plan_id BIGINT NOT NULL,
---    payment_intent_id BIGINT NOT NULL,
+    subscription_plan_id BIGINT,
     initial_credits DECIMAL(10,2) NOT NULL CHECK (initial_credits >= 0),
     used_credits DECIMAL(10,2) NOT NULL CHECK (used_credits >= 0),
-    subscribed_at TIMESTAMP NOT NULL,
---    valid_until TIMESTAMP,
+    auto_renew BOOLEAN NOT NULL DEFAULT TRUE, -- Whether the subscription auto-renews
     upgraded_from BIGINT,
+    downgraded_from BIGINT,
+    renewal_status renewal_status_enum NOT NULL,
+    extra_data JSONB,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    expires_at TIMESTAMP,
-    CONSTRAINT fk_sp_sub_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id),
-    CONSTRAINT fk_sp_sub_subscription_plan FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plan(id),
-    CONSTRAINT fk_sp_sub_payment_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intent(id),
-    CONSTRAINT fk_sp_sub_upgraded_from FOREIGN KEY (upgraded_from) REFERENCES service_provider_subscription(id)
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- When the subscription was first activated
+    end_date TIMESTAMP, -- When the subscription ends, NULL if ongoing
+    next_billing_date TIMESTAMP, -- When the next billing cycle starts
+    last_billing_date TIMESTAMP, -- When the last billing cycle ended
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    cancelled_at TIMESTAMP, -- When the subscription was cancelled, NULL if not cancelled
+    trial_period_started_at TIMESTAMP, -- When the trial period started, NULL if not applicable
+    trial_period_ends_at TIMESTAMP, -- When the trial period ends, NULL if not applicable
+    grace_period_started_at TIMESTAMP, -- When the grace period started, NULL if not applicable
+    grace_period_ends_at TIMESTAMP, -- When the grace period ends, NULL if not applicable
+    renewal_attempted_at TIMESTAMP, -- When the last renewal attempt was made, NULL if not applicable
 
+    CONSTRAINT fk_subscription_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+    CONSTRAINT fk_subscription_plan FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plan(id) ON DELETE SET NULL,
+    CONSTRAINT fk_upgraded_from FOREIGN KEY (upgraded_from) REFERENCES service_provider_subscription(id) ON DELETE SET NULL,
+    CONSTRAINT fk_downgraded_from FOREIGN KEY (downgraded_from) REFERENCES service_provider_subscription(id) ON DELETE SET NULL
 );
+
+CREATE INDEX idx_sp_subscription_provider_id ON service_provider_subscription(provider_id);
+CREATE INDEX idx_sp_subscription_plan_id ON service_provider_subscription(subscription_plan_id);
+CREATE INDEX idx_sp_subscription_renewal_status ON service_provider_subscription(renewal_status);
 CREATE UNIQUE INDEX ux_one_active_subscription_per_provider
 ON service_provider_subscription(provider_id)
-WHERE is_active = true; -- Only one active subscription per provider
-CREATE INDEX idx_sp_sub_provider ON service_provider_subscription(provider_id);
+WHERE is_active = true;
 
 
 CREATE TABLE subscription_transaction (
     id BIGSERIAL PRIMARY KEY,
-    service_provider_subscription_id BIGINT NOT NULL,
-    transaction_id BIGINT NOT NULL,
+    subscription_plan_id BIGINT,
+    service_provider_subscription_id BIGINT,
+    provider_id BIGINT,
+    transaction_id BIGINT,
+--    leads_included INTEGER DEFAULT 0,
+    credits_included DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (credits_included >= 0),
+    extra_data JSONB,
+    purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_subscription_transaction_subscription
-        FOREIGN KEY (service_provider_subscription_id)
-        REFERENCES service_provider_subscription(id),
-
-    CONSTRAINT fk_subscription_transaction_transaction
-        FOREIGN KEY (transaction_id)
-        REFERENCES transaction(id)
+    CONSTRAINT fk_txn_subscription_plan FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plan(id) ON DELETE SET NULL,
+    CONSTRAINT fk_txn_subscription FOREIGN KEY (service_provider_subscription_id) REFERENCES service_provider_subscription(id) ON DELETE SET NULL,
+    CONSTRAINT fk_txn_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE SET NULL,
+    CONSTRAINT fk_txn_transaction FOREIGN KEY (transaction_id) REFERENCES transaction(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_subscription_transaction_subscription
-    ON subscription_transaction(service_provider_subscription_id);
-
-CREATE INDEX idx_subscription_transaction_transaction
-    ON subscription_transaction(transaction_id);
-
+CREATE INDEX idx_subscription_txn_provider_id ON subscription_transaction(provider_id);
+CREATE INDEX idx_subscription_txn_subscription_id ON subscription_transaction(service_provider_subscription_id);
+CREATE INDEX idx_subscription_txn_subscription_plan_id ON subscription_transaction(subscription_plan_id);
+CREATE INDEX idx_subscription_txn_transaction_id ON subscription_transaction(transaction_id);
 
 
-CREATE TABLE add_on_usage (
+--CREATE TABLE subscription_transaction (
+--    id BIGSERIAL PRIMARY KEY,
+--    service_provider_subscription_id BIGINT,
+--    transaction_id BIGINT,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--
+--    CONSTRAINT fk_subscription_transaction_subscription
+--        FOREIGN KEY (service_provider_subscription_id)
+--        REFERENCES service_provider_subscription(id)
+--        ON DELETE SET NULL,
+--
+--    CONSTRAINT fk_subscription_transaction_transaction
+--        FOREIGN KEY (transaction_id)
+--        REFERENCES transaction(id)
+--        ON DELETE SET NULL
+--
+--);
+--
+--CREATE INDEX idx_subscription_transaction_subscription
+--    ON subscription_transaction(service_provider_subscription_id);
+--
+--CREATE INDEX idx_subscription_transaction_transaction
+--    ON subscription_transaction(transaction_id);
+
+
+CREATE TABLE service_provider_subscription_usage (
     id BIGSERIAL PRIMARY KEY,
-    service_provider_addon_id BIGINT NOT NULL,
-    service_provider_lead_id BIGINT NOT NULL,
-    used_credit_amount DECIMAL(10,2) NOT NULL CHECK (used_credit_amount > 0),
+    subscription_id BIGINT, -- NULLABLE for ON DELETE SET NULL
+    job_lead_claim_id BIGINT, -- Reference to the job lead claim
+
+    -- NEW FIELDS
+    used_credits DECIMAL(10,2) NOT NULL DEFAULT 0.00, -- Number of credits used for this claim
+
     used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_addon_usage_service_provider_addon FOREIGN KEY (service_provider_addon_id) REFERENCES service_provider_add_on(id),
-    CONSTRAINT fk_addon_usage_service_provider_lead FOREIGN KEY (service_provider_lead_id) REFERENCES service_provider_lead(id)
+
+    CONSTRAINT fk_usage_subscription FOREIGN KEY (subscription_id)
+        REFERENCES service_provider_subscription(id) ON DELETE SET NULL,
+    CONSTRAINT fk_usage_job_lead_claim FOREIGN KEY (job_lead_claim_id)
+        REFERENCES job_lead_claim(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_addon_usage_service_provider_addon ON add_on_usage(service_provider_addon_id);
-CREATE INDEX idx_addon_usage_service_provider_lead ON add_on_usage(service_provider_lead_id);
+CREATE INDEX idx_sp_subscription_usage_subscription ON service_provider_subscription_usage(subscription_id);
+CREATE INDEX idx_sp_subscription_usage_job_lead_claim ON service_provider_subscription_usage(job_lead_claim_id);
 
 
 
@@ -1101,6 +1413,7 @@ CREATE TABLE discount_plan (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     coupon_required BOOLEAN NOT NULL DEFAULT TRUE,
     applies_to discount_user_type NOT NULL DEFAULT 'NEW_USER',
+    extra_data JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_discount_plan_country FOREIGN KEY (country_id) REFERENCES country(country_id)
@@ -1117,15 +1430,17 @@ CREATE TABLE discount_plan_translation (
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_discount_plan_translation_discount FOREIGN KEY (discount_id) REFERENCES discount_plan(id) ON DELETE CASCADE,
+    CONSTRAINT fk_discount_plan_translation_discount FOREIGN KEY (discount_plan_id) REFERENCES discount_plan(id) ON DELETE CASCADE,
     CONSTRAINT fk_discount_plan_translation_language FOREIGN KEY (language_id) REFERENCES language(language_id) ON DELETE CASCADE,
-    CONSTRAINT uq_discount_trans_unique UNIQUE (discount_id, language_id)
+    CONSTRAINT uq_discount_trans_unique UNIQUE (discount_plan_id, language_id)
 );
 
-CREATE INDEX idx_discount_trans_discount ON discount_plan_translation(discount_id);
+CREATE INDEX idx_discount_trans_discount ON discount_plan_translation(discount_plan_id);
 CREATE INDEX idx_discount_trans_language ON discount_plan_translation(language_id);
-CREATE INDEX idx_discount_trans_unique ON discount_plan_translation(discount_id, language_id);
+CREATE INDEX idx_discount_trans_unique ON discount_plan_translation(discount_plan_id, language_id);
 
+
+--=================================================================
 
 CREATE TABLE coupon (
     id BIGSERIAL PRIMARY KEY,
@@ -1209,6 +1524,9 @@ WHERE is_active = true;
 CREATE INDEX idx_dpspe_subscription_plan_id_discount_plan_id
     ON subscription_plan_discount_eligibility(subscription_plan_id, discount_plan_id);
 
+
+
+
 CREATE TABLE add_on_plan_discount_eligibility (
     id BIGSERIAL PRIMARY KEY,
     add_on_plan_id BIGINT NOT NULL,
@@ -1221,16 +1539,16 @@ CREATE TABLE add_on_plan_discount_eligibility (
     CONSTRAINT uq_dpae_add_on_plan_id_discount_plan_id UNIQUE (add_on_plan_id, discount_plan_id)
 );
 
-CREATE INDEX idx_dpae_add_on_plan ON addon_plan_discount_eligibility(add_on_plan_id);
-CREATE INDEX idx_dpae_discount_plan ON addon_plan_discount_eligibility(discount_plan_id);
-CREATE INDEX idx_dpae_is_active ON addon_plan_discount_eligibility(is_active);
+CREATE INDEX idx_dpae_add_on_plan ON add_on_plan_discount_eligibility(add_on_plan_id);
+CREATE INDEX idx_dpae_discount_plan ON add_on_plan_discount_eligibility(discount_plan_id);
+CREATE INDEX idx_dpae_is_active ON add_on_plan_discount_eligibility(is_active);
 
 CREATE UNIQUE INDEX idx_dpae_add_on_plan_id_is_active
-ON addon_plan_discount_eligibility(add_on_plan_id, is_active)
+ON add_on_plan_discount_eligibility(add_on_plan_id, is_active)
 WHERE is_active = true;
 
 CREATE INDEX idx_dpae_add_on_plan_id_discount_plan_id
-    ON addon_plan_discount_eligibility(add_on_plan_id, discount_plan_id);
+    ON add_on_plan_discount_eligibility(add_on_plan_id, discount_plan_id);
 
 
 -- ==========================================================================================
@@ -1260,10 +1578,58 @@ CREATE INDEX idx_system_config_updated_by ON system_config(updated_by);
 
 
 -- ENUMS
-CREATE TYPE job_lead_status_enum AS ENUM ('OPEN', 'IN_NEGOTIATION', 'ASSIGNED', 'CLOSED');
-CREATE TYPE service_provider_lead_status_enum AS ENUM ('PENDING', 'VIEWED', 'QUOTED', 'DECLINED', 'EXPIRED', 'CUSTOMER_ACCEPTED', 'CUSTOMER_REJECTED', 'WITHDRAWN', 'FOLLOW_UP');
-CREATE TYPE service_provider_quote_status_enum AS ENUM ('PENDING', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'EXPIRED');
-CREATE TYPE notification_recipient_type_enum AS ENUM ('CUSTOMER', 'EMPLOYEE', 'OWNER', 'MANAGER', 'ALL');
+--CREATE TYPE job_lead_status_enum AS ENUM ('OPEN', 'IN_NEGOTIATION', 'ASSIGNED', 'CLOSED');
+--CREATE TYPE service_provider_lead_status_enum AS ENUM ('PENDING', 'VIEWED', 'QUOTED', 'DECLINED', 'EXPIRED', 'CUSTOMER_ACCEPTED', 'CUSTOMER_REJECTED', 'WITHDRAWN', 'FOLLOW_UP');
+
+CREATE TYPE job_lead_status_enum AS ENUM (
+    'OPEN',
+    'CLAIMED_PARTIALLY',
+    'CLAIMED_FULL',
+    'ASSIGNED',
+    'EXPIRED',
+    'CANCELLED',
+    'ARCHIVED'
+);
+
+
+-- Enum for service_provider_lead_status
+--CREATE TYPE service_provider_lead_status_enum AS ENUM (
+--    'PENDING',
+--    'VIEWED',
+--    'ACCEPTED',
+--    'QUOTED',
+--    'DECLINED',
+--    'CANCELLED'
+--);
+
+
+CREATE TYPE job_lead_claim_status_enum AS ENUM (
+    'CLAIMED',     -- provider claimed
+    'QUOTED',      -- provider submitted quote
+    'WITHDRAWN',   -- provider cancelled
+    'ACCEPTED',    -- customer accepted quote
+    'REJECTED',    -- customer rejected quote
+    'EXPIRED'      -- auto-expired
+);
+
+-- Enum for service_provider_quote_status
+--CREATE TYPE service_provider_quote_status_enum AS ENUM (
+--    'PENDING',
+--    'VIEWED',
+--    'CANCELLED',
+--    'NOT_CONSIDERED',
+--    'DECLINED',
+--    'ACCEPTED'
+--);
+
+CREATE TYPE job_quote_status_enum AS ENUM (
+    'PENDING',     -- auto
+    'ACCEPTED',    -- customer
+    'REJECTED',    -- customer
+    'WITHDRAWN'    -- provider
+);
+
+CREATE TYPE notification_recipient_type_enum AS ENUM ('SERVICE_PROVIDER','CUSTOMER', 'EMPLOYEE', 'OWNER', 'MANAGER', 'ALL');
 CREATE TYPE message_context_type_enum AS ENUM ('JOB', 'SUPPORT', 'QUOTATION', 'GENERAL');
 
 -- Skill
@@ -1314,6 +1680,8 @@ CREATE TABLE job_lead (
     id BIGSERIAL PRIMARY KEY,
     job_request_id BIGINT,
     status job_lead_status_enum NOT NULL,
+    max_claims INT NOT NULL, -- Maximum number of service providers that can claim this lead
+    claimed_count INT DEFAULT 0, -- Number of service providers that have claimed this lead
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_job_lead_job_request FOREIGN KEY (job_request_id) REFERENCES job_request(id) ON DELETE SET NULL
@@ -1322,40 +1690,77 @@ CREATE INDEX idx_job_lead_job_request_id ON job_lead(job_request_id);
 CREATE INDEX idx_job_lead_status ON job_lead(status);
 
 -- ServiceProviderLead
-CREATE TABLE service_provider_lead (
+CREATE TABLE job_lead_claim (
     id BIGSERIAL PRIMARY KEY,
     job_lead_id BIGINT NOT NULL,
     provider_id BIGINT NOT NULL,
-    status service_provider_lead_status_enum NOT NULL,
-    response_duration BIGINT, -- in seconds
-    viewed_at TIMESTAMP,
-    responded_at TIMESTAMP,
+    status job_lead_claim_status_enum NOT NULL,
+    claimed_at TIMESTAMP,
+    rejection_reason_id BIGINT,
+    requote_requested BOOLEAN DEFAULT FALSE,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_spl_job_lead FOREIGN KEY (job_lead_id) REFERENCES job_lead(id) ON DELETE CASCADE,
-    CONSTRAINT fk_spl_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE
+    CONSTRAINT fk_spl_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+    CONSTRAINT fk_spl_rejection_reason FOREIGN KEY (rejection_reason_id) REFERENCES rejection_reason(id) ON DELETE SET NULL,
+    CONSTRAINT uq_spl_job_lead_id_provider_id UNIQUE (job_lead_id, provider_id)
 );
-CREATE INDEX idx_spl_job_lead_id ON service_provider_lead(job_lead_id);
-CREATE INDEX idx_spl_provider_id ON service_provider_lead(provider_id);
-CREATE INDEX idx_spl_job_lead_id_provider_id_status ON service_provider_lead(job_lead_id, provider_id, status);
-CREATE INDEX idx_spl_status ON service_provider_lead(status);
+CREATE INDEX idx_spl_job_lead_id ON job_lead_claim(job_lead_id);
+CREATE INDEX idx_spl_provider_id ON job_lead_claim(provider_id);
+CREATE INDEX idx_spl_job_lead_id_provider_id_status ON job_lead_claim(job_lead_id, provider_id, status);
+CREATE INDEX idx_spl_status ON job_lead_claim(status);
 
 -- ServiceProviderQuote
-CREATE TABLE service_provider_quote (
+CREATE TABLE job_quote (
     id BIGSERIAL PRIMARY KEY,
-    provider_lead_id BIGINT NOT NULL UNIQUE,
-    proposed_price NUMERIC(15,4),
+    claim_id BIGINT NOT NULL,
+    proposed_price NUMERIC(15,2),
     proposed_start_date TIMESTAMP,
     message TEXT NOT NULL,
-    status service_provider_quote_status_enum NOT NULL,
-    accepted_at TIMESTAMP,
+    status job_quote_status_enum NOT NULL,
+    customer_feedback TEXT,
+    rejection_reason rejection_reason_enum,
+--    requote_requested BOOLEAN DEFAULT FALSE,
+    rejection_reason_id BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_spq_provider_lead FOREIGN KEY (provider_lead_id) REFERENCES service_provider_lead(id) ON DELETE CASCADE
+    CONSTRAINT fk_spq_provider_claim FOREIGN KEY (claim_id) REFERENCES job_lead_claim(id) ON DELETE CASCADE,
+    CONSTRAINT fk_spq_rejection_reason FOREIGN KEY (rejection_reason_id) REFERENCES rejection_reason(id) ON DELETE SET NULL
 
 );
-CREATE INDEX idx_spq_provider_lead_id ON service_provider_quote(provider_lead_id);
+CREATE INDEX idx_spq_claim_id ON service_provider_quote(claim_id);
 CREATE INDEX idx_spq_status ON service_provider_quote(status);
+
+
+
+--CREATE TABLE add_on_usage (
+--    id BIGSERIAL PRIMARY KEY,
+--    service_provider_addon_id BIGINT NOT NULL,
+--    service_provider_lead_id BIGINT NOT NULL,
+--    used_credit_amount DECIMAL(10,2) NOT NULL CHECK (used_credit_amount > 0),
+--    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    CONSTRAINT fk_addon_usage_service_provider_addon FOREIGN KEY (service_provider_addon_id) REFERENCES service_provider_add_on(id),
+--    CONSTRAINT fk_addon_usage_service_provider_lead FOREIGN KEY (service_provider_lead_id) REFERENCES service_provider_lead(id)
+--);
+--
+--CREATE INDEX idx_addon_usage_service_provider_addon ON add_on_usage(service_provider_addon_id);
+--CREATE INDEX idx_addon_usage_service_provider_lead ON add_on_usage(service_provider_lead_id);
+
+CREATE TABLE invite_for_quote (
+    id BIGSERIAL PRIMARY KEY,
+    lead_id BIGINT NOT NULL,
+    provider_id BIGINT NOT NULL,
+    viewed BOOLEAN DEFAULT FALSE,
+    invited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lead_id) REFERENCES job_lead(id) ON DELETE CASCADE,
+    FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_invite_for_quote_lead_id ON invite_for_quote(lead_id);
+CREATE INDEX idx_invite_for_quote_provider_id ON invite_for_quote(provider_id);
 
 
 -- Review
@@ -1487,7 +1892,8 @@ CREATE TABLE notification (
     title VARCHAR(100) NOT NULL,
     content TEXT NOT NULL,
     read_at TIMESTAMP,
-    redirect_url TEXT,
+--    redirect_url TEXT,
+    action_url TEXT, -- URL path to redirect when the notification is clicked
     is_broadcast BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1501,7 +1907,7 @@ CREATE TABLE notification_recipient (
     id BIGSERIAL PRIMARY KEY,
     recipient_id BIGINT NOT NULL,
     notification_id BIGINT NOT NULL,
-    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+--    is_read BOOLEAN NOT NULL DEFAULT FALSE,
     read_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1890,7 +2296,7 @@ CREATE TABLE advice_category_translation (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_advice_category_translation FOREIGN KEY (advice_category_id) REFERENCES advice_category(id),
-    CONSTRAINT fk_advice_category_language FOREIGN KEY (language_id) REFERENCES language(id),
+    CONSTRAINT fk_advice_category_language FOREIGN KEY (language_id) REFERENCES language(language_id),
     CONSTRAINT uq_advice_category_translation UNIQUE (advice_category_id, language_id)
 );
 
@@ -1922,12 +2328,12 @@ CREATE TABLE advice_translation (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_advice_translation_advice FOREIGN KEY (advice_id) REFERENCES advice(id),
-    CONSTRAINT fk_advice_translation_language FOREIGN KEY (language_id) REFERENCES language(id),
+    CONSTRAINT fk_advice_translation_language FOREIGN KEY (language_id) REFERENCES language(language_id),
     CONSTRAINT uq_advice_translation UNIQUE (advice_id, language_id)
 );
 
 CREATE INDEX idx_advice_translation_advice ON advice_translation(advice_id);
-CREATE INDEX idx_advice_translation_advice_language ON advice_translation(advise_id, language_id);
+CREATE INDEX idx_advice_translation_advice_language ON advice_translation(advice_id, language_id);
 
 
 CREATE TABLE advice_comment (

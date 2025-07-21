@@ -49,7 +49,7 @@ public class ServiceProviderSecurityAspect {
         }
 
         if (providerId == null) {
-            throw new IllegalArgumentException("Missing or invalid provider ID in method parameters.");
+            throw new IllegalArgumentException("Missing or invalid service provider ID in method parameters.");
         }
 
         UUID userId = AuthUtils.getLoggedInUserId();

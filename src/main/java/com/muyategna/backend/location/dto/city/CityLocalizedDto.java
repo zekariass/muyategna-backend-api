@@ -14,4 +14,6 @@ public class CityLocalizedDto {
     private String name;
     private Long regionId;
     private String description;
+    private Double latitude;
+    private Double longitude;
 }

@@ -2,17 +2,17 @@ package com.muyategna.backend.billing.entity;
 
 import com.muyategna.backend.billing.enums.BillingCycleEnum;
 import com.muyategna.backend.location.entity.Country;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Entity
 @Table(name = "subscription_plan")
@@ -27,10 +27,6 @@ public class SubscriptionPlan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "service_category_id", nullable = false)
-//    private ServiceCategory serviceCategory;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "country_id", nullable = false)
     private Country country;
@@ -43,16 +39,13 @@ public class SubscriptionPlan {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "billing_cycle", nullable = false)
-    private BillingCycleEnum billingCycle = BillingCycleEnum.MONTH;
+    private BillingCycleEnum billingCycle = BillingCycleEnum.MONTH; // Consider changing to days only
 
     @Column(name = "billing_cycle_count", nullable = false)
     private Integer billingCycleCount = 1;
 
     @Column(name = "trial_period_days", nullable = false)
     private Integer trialPeriodDays = 0;
-
-    @Column(name = "leads_included", nullable = false)
-    private Integer creditsIncluded = 0;
 
     @Column(name = "plan_order", nullable = false)
     private Integer sortOrder;
@@ -63,8 +56,18 @@ public class SubscriptionPlan {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    @Column(nullable = false, unique = true)
-    private String slug;
+    @Column(name = "credits_included", nullable = false)
+    private BigDecimal creditsIncluded = BigDecimal.ZERO;
+
+    @Column(name = "upgradeable", nullable = false)
+    private Boolean upgradeable = true;
+
+    @Column(name = "downgradeable", nullable = false)
+    private Boolean downgradeable = true;
+
+    @Column(name = "extra_data", columnDefinition = "jsonb")
+    @Type(JsonBinaryType.class)
+    private Map<String, Object> extraData;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

@@ -116,4 +116,11 @@ public final class LanguageMapper {
         language.setName(dto.getName());
         return language;
     }
+
+    public static Language toEntity(LanguageDto dto) {
+        if (dto == null) return null;
+        Language language = new Language();
+        language.setId(dto.getId());
+        return language;
+    }
 }

@@ -1,15 +1,16 @@
 package com.muyategna.backend.job_request.entity;
 
 import com.muyategna.backend.job_request.enums.JobStatus;
-import com.muyategna.backend.job_request.enums.WhenToStartJob;
 import com.muyategna.backend.location.entity.Address;
 import com.muyategna.backend.professional_service.entity.Service;
 import com.muyategna.backend.user.entity.UserProfile;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcType;
+import org.hibernate.annotations.Type;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -18,6 +19,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Represents a job request made by a customer for a specific service.
@@ -51,22 +53,33 @@ public class JobRequest {
     @Column(name = "budget")
     private BigDecimal budget;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "when_to_start_job", nullable = false)
-    @JdbcType(PostgreSQLEnumJdbcType.class)
-    private WhenToStartJob whenToStartJob;
+    @Column(name = "question_answers", columnDefinition = "jsonb")
+    @Type(JsonBinaryType.class)
+    private List<Map<String, Object>> questionAnswers;
+
+    @Column(name = "extra_data", columnDefinition = "jsonb")
+    @Type(JsonBinaryType.class)
+    private Map<String, Object> extraData;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "start_window_id", nullable = false)
+    private JobStartTimeWindow startTimeWindow;
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @JdbcType(PostgreSQLEnumJdbcType.class)
-    private JobStatus status = JobStatus.DRAFT;
+    private JobStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id")
     private Address address;
+//
+//    @OneToMany(mappedBy = "jobRequest", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+//    private List<JobQuestionAnswer> answers;
 
-    @OneToMany(mappedBy = "jobRequest", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<JobQuestionAnswer> answers;
+    @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<JobRequestMedia> mediaList;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

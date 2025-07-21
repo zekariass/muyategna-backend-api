@@ -123,7 +123,6 @@ public class ServiceEmployeeSecuredPublicController {
             @Parameter(description = "Service Employee id") @PathVariable Long serviceEmployeeId,
             HttpServletRequest request) {
         Boolean serviceEmployee = serviceEmployeeService.activateServiceEmployeeById(serviceProviderId, serviceEmployeeId);
-//        EntityModel<ServiceEmployeeDto> entityModel = assembler.toModel(serviceEmployee, request);
         ApiResponse<EntityModel<Void>> response = ApiResponse.<EntityModel<Void>>builder()
                 .statusCode(HttpStatus.OK.value())
                 .success(true)
@@ -143,7 +142,6 @@ public class ServiceEmployeeSecuredPublicController {
             @Parameter(description = "Service Employee id") @PathVariable Long serviceEmployeeId,
             HttpServletRequest request) {
         Boolean serviceEmployee = serviceEmployeeService.deactivateServiceEmployeeById(serviceProviderId, serviceEmployeeId);
-//        EntityModel<ServiceEmployeeDto> entityModel = assembler.toModel(serviceEmployee, request);
         ApiResponse<EntityModel<Void>> response = ApiResponse.<EntityModel<Void>>builder()
                 .statusCode(HttpStatus.OK.value())
                 .success(true)

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -24,6 +25,7 @@ public class DiscountPlanUpdateDto {
     private Integer perUserLimit;
     private BigDecimal maxDiscountValue;
     private Boolean isActive;
+    private Map<String, Object> extraData;
     private Boolean couponRequired;
     private DiscountUserType appliesTo;
 

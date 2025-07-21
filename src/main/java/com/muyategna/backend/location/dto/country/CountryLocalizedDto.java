@@ -16,4 +16,6 @@ public class CountryLocalizedDto {
     private String currency;
     private String taxpayerIdType;
     private boolean isGlobal;
+    private Double latitude;
+    private Double longitude;
 }

@@ -27,6 +27,7 @@ public final class DiscountPlanMapper {
                 .isActive(discountPlan.getIsActive())
                 .couponRequired(discountPlan.getCouponRequired())
                 .appliesTo(discountPlan.getAppliesTo())
+                .extraData(discountPlan.getExtraData())
                 .createdAt(discountPlan.getCreatedAt())
                 .updatedAt(discountPlan.getUpdatedAt())
                 .build();
@@ -46,6 +47,7 @@ public final class DiscountPlanMapper {
                 .isActive(discountPlan.getIsActive())
                 .couponRequired(discountPlan.getCouponRequired())
                 .appliesTo(discountPlan.getAppliesTo())
+                .extraData(discountPlan.getExtraData())
                 .build();
     }
 
@@ -67,6 +69,7 @@ public final class DiscountPlanMapper {
         discountPlan.setUpdatedAt(discountPlanDto.getUpdatedAt());
         discountPlan.setCouponRequired(discountPlanDto.getCouponRequired());
         discountPlan.setAppliesTo(discountPlanDto.getAppliesTo());
+        discountPlan.setExtraData(discountPlanDto.getExtraData());
         return discountPlan;
     }
 
@@ -87,6 +90,7 @@ public final class DiscountPlanMapper {
         discountPlan.setIsActive(discountPlanDto.getIsActive());
         discountPlan.setCouponRequired(discountPlanDto.getCouponRequired());
         discountPlan.setAppliesTo(discountPlanDto.getAppliesTo());
+        discountPlan.setExtraData(discountPlanDto.getExtraData());
         return discountPlan;
     }
 
@@ -107,6 +111,7 @@ public final class DiscountPlanMapper {
         discountPlan.setIsActive(discountPlanDto.getIsActive());
         discountPlan.setCouponRequired(discountPlanDto.getCouponRequired());
         discountPlan.setAppliesTo(discountPlanDto.getAppliesTo());
+        discountPlan.setExtraData(discountPlanDto.getExtraData());
         return discountPlan;
     }
 }

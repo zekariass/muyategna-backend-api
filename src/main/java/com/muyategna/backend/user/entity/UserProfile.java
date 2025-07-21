@@ -1,9 +1,11 @@
 package com.muyategna.backend.user.entity;
 
-import com.muyategna.backend.location.entity.Address;
 import com.muyategna.backend.common.entity.Language;
+import com.muyategna.backend.location.entity.Country;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -61,9 +63,9 @@ public class UserProfile {
     @Column(name = "is_staff")
     private Boolean isStaff;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "address_id", referencedColumnName = "address_id")
-    private Address address;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "country_id", referencedColumnName = "country_id")
+    private Country country;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "default_language_id", referencedColumnName = "language_id")

@@ -1,11 +1,14 @@
 package com.muyategna.backend.system.exception;
 
 import com.muyategna.backend.common.ApiResponse;
+import com.muyategna.backend.job_request.exception.NoValidSubscriptionOrCreditFoundException;
+import com.muyategna.backend.job_request.exception.ServiceNotSubscribedException;
 import com.muyategna.backend.user.exception.DuplicateUserException;
 import com.muyategna.backend.user.exception.UserCreationException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.BadRequestException;
 import org.hibernate.LazyInitializationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -16,6 +19,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCauseMessage;
 
 /**
  * GlobalExceptionHandler handles global exceptions across the application.
@@ -33,7 +38,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Object>> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
-        return buildApiResponse(null, HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request);
+        return buildApiResponse(null, HttpStatus.INTERNAL_SERVER_ERROR, ex.toString(), request);
     }
 
     /**
@@ -129,7 +134,16 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(UserCreationException.class)
     public ResponseEntity<ApiResponse<Object>> handleUserCreationException(UserCreationException ex, HttpServletRequest request) {
-        return buildApiResponse(null, HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request);
+//        return buildApiResponse(null, HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request);
+        String rootMessage = getRootCauseMessage(ex);
+
+        if (rootMessage.contains("uq_") || rootMessage.contains("unique constraint")) {
+            return buildApiResponse(null, HttpStatus.CONFLICT, rootMessage, request);
+        }
+
+        // Fallback for other data integrity violations
+        return buildApiResponse(null, HttpStatus.BAD_REQUEST, rootMessage, request);
+
     }
 
     @ExceptionHandler(InvalidLanguageCodeException.class)
@@ -153,6 +167,30 @@ public class GlobalExceptionHandler {
         return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(ServiceNotSubscribedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleServiceNotSubscribedException(ServiceNotSubscribedException ex, HttpServletRequest request) {
+        return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(NoValidSubscriptionOrCreditFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNoValidSubscriptionOrCreditFoundException(NoValidSubscriptionOrCreditFoundException ex, HttpServletRequest request) {
+        return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolationException(DataIntegrityViolationException ex, HttpServletRequest request) {
+//        return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);
+
+        String rootMessage = getRootCauseMessage(ex);
+
+        if (rootMessage.contains("uq_") || rootMessage.contains("duplicate")) {
+            return buildApiResponse(null, HttpStatus.CONFLICT, "Duplicate key value violates unique constraint", request);
+        }
+
+        // Fallback for other data integrity violations
+        return buildApiResponse(null, HttpStatus.BAD_REQUEST, rootMessage, request);
+
+    }
 
     private ResponseEntity<ApiResponse<Object>> buildApiResponse(Map<String, String> errors, HttpStatus status, String message, HttpServletRequest request) {
         ApiResponse<Object> apiResponse = ApiResponse.builder()

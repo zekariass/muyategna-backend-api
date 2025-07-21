@@ -1,11 +1,15 @@
 package com.muyategna.backend.billing.entity;
 
+import com.muyategna.backend.billing.enums.AccountingTypeEnum;
 import com.muyategna.backend.billing.enums.TransactionStatusEnum;
+import com.muyategna.backend.billing.enums.TxnTypeEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -49,7 +53,28 @@ public class Transaction {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    private TransactionStatusEnum status = TransactionStatusEnum.INITIATED;
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    private TransactionStatusEnum status;
+
+
+    @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    private AccountingTypeEnum accountingType;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    private TxnTypeEnum txnType;
+
+    @Column(name = "refunded_amount")
+    private BigDecimal refundedAmount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "original_txn_id")
+    private Transaction originalTxnId;
+
+    @Column(name = "response_code")
+    private String responseCode;
+
 
     @CreatedDate
     private LocalDateTime createdAt;

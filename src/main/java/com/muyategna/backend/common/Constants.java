@@ -1,6 +1,7 @@
 package com.muyategna.backend.common;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Constants class containing various constants used throughout the application.
@@ -37,17 +38,41 @@ public final class Constants {
             "/docs"
     );
 
-    public static final String CACHE_LOCATION = "location";
-    public static final String CACHE_SYSTEM = "system";
-    public static final String CACHE_COMMON = "common";
-    public static final String CACHE_SERVICE = "service";
-    public static final String[] ALL_CACHE_NAMES = {CACHE_LOCATION, CACHE_SYSTEM, CACHE_COMMON, CACHE_SERVICE};
-
 
     //===================================================================================
 
     public static final String DEFAULT_ADMIN_PAGE_SIZE_NAME = "DEFAULT_ADMIN_PAGE_SIZE";
     public static final String DEFAULT_PUBLIC_PAGE_SIZE_NAME = "DEFAULT_PUBLIC_PAGE_SIZE";
+
+    // FILE EXTENSIONS
+    public static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "svg", "heic");
+    public static final Set<String> VIDEO_EXTENSIONS = Set.of("mp4", "mkv", "mov", "avi", "wmv", "flv", "webm", "mpeg", "3gp");
+    public static final Set<String> DOCUMENT_EXTENSIONS = Set.of("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "md", "csv", "rtf", "odt", "ods", "odp");
+    public static final Set<String> AUDIO_EXTENSIONS = Set.of("mp3", "wav", "aac", "ogg", "flac", "m4a", "wma", "opus");
+    public static final Set<String> ARCHIVE_EXTENSIONS = Set.of("zip", "rar", "7z", "tar", "gz", "bz2", "xz", "tar.gz", "tar.xz");
+
+
+    //===================================================================================
+    // RABBITMQ QUEUE BASE NAME
+
+    // Job Request Queues
+    public static final String JOB_REQUEST_FILE_UPLOAD_QUEUE_BASE_NAME = "job.request.file.upload";
+    public static final String JOB_REQUEST_NOTIFICATION_QUEUE_BASE_NAME = "job.request.notification";
+
+    // Job Lead Queues
+    public static final String JOB_LEAD_GENERATION_QUEUE_BASE_NAME = "job.lead.generation";
+    public static final String JOB_LEAD_ASSIGNMENT_QUEUE_BASE_NAME = "job.lead.assignment";
+    public static final String JOB_LEAD_REASSIGNMENT_QUEUE_BASE_NAME = "job.lead.reassignment";
+    public static final String JOB_LEAD_REMINDER_QUEUE_BASE_NAME = "job.lead.reminder";
+
+    // Service Provider Queues
+    public static final String SP_RANKING_FOR_NEW_LEAD_ASSIGNMENT_QUEUE_BASE_NAME = "service.provider.ranking.for.new.lead.assignment";
+    public static final String SP_RANKING_FOR_LEAD_REASSIGNMENT_QUEUE_BASE_NAME = "service.provider.ranking.for.lead.reassignment";
+
+    public static final long JOB_REQUEST_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+    public static final long JOB_REQUEST_VIDEO_MAX_SIZE = 20 * 1024 * 1024;
+    public static final long JOB_REQUEST_DOCUMENT_MAX_SIZE = 2 * 1024 * 1024;
+    public static final long JOB_REQUEST_ARCHIVE_MAX_SIZE = 50 * 1024 * 1024;
 
     private Constants() {
         // Prevent instantiation

@@ -1,6 +1,7 @@
 package com.muyategna.backend.location.dto.country;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -27,5 +28,11 @@ public class CountryCreateDto {
     private String currency;
 
     private String taxpayerIdType;
+
+    @NotNull(message = "Latitude is required")
+    private Double latitude;
+
+    @NotNull(message = "Longitude is required")
+    private Double longitude;
 
 }

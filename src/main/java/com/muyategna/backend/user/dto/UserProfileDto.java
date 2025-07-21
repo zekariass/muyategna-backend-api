@@ -1,6 +1,7 @@
 package com.muyategna.backend.user.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UserProfileDto {
     private Long id;
     private UUID keycloakUserId;
@@ -21,7 +23,6 @@ public class UserProfileDto {
     private String profilePictureUrl;
     private LocalDateTime lastLogin;
     private String referralCode;
-    private long addressId;
-    private String fullAddress;
+    private Long countryId;
     private Long defaultLanguageId;
 }

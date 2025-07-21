@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class AddressCreateDto {
-    private Long countryId;
+//    private Long countryId;
     private Long regionId;
     private Long cityId;
     private Long subCityOrDivisionId;

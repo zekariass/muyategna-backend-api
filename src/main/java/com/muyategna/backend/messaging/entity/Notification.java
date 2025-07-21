@@ -36,8 +36,8 @@ public class Notification {
     @Column(name = "read_at")
     private LocalDateTime readAt;
 
-    @Column(name = "redirect_url", columnDefinition = "TEXT")
-    private String redirectUrl;
+    @Column(name = "action_url", columnDefinition = "TEXT")
+    private String actionUrl;
 
     @Column(name = "is_broadcast", nullable = false)
     private boolean isBroadcast = false;

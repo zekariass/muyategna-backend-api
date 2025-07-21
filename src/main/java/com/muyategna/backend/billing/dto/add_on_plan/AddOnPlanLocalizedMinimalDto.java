@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -20,5 +21,7 @@ public class AddOnPlanLocalizedMinimalDto {
     private BigDecimal priceAmount;
     private Integer creditsIncluded;
     private Integer sortOrder;
+    private Map<String, String> extraData;
+
 }
 

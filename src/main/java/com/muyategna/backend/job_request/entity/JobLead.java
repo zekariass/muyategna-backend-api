@@ -36,6 +36,12 @@ public class JobLead {
     @JdbcType(PostgreSQLEnumJdbcType.class)
     private JobLeadStatus status;
 
+    @Column(name = "max_claims")
+    private Integer maxClaims;
+
+    @Column(name = "claimed_count", nullable = false)
+    private Integer claimedCount = 0;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -44,4 +50,5 @@ public class JobLead {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }
+
 

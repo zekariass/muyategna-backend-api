@@ -3,12 +3,15 @@ package com.muyategna.backend.user.service;
 import com.muyategna.backend.common.dto.language.LanguageDto;
 import com.muyategna.backend.common.mapper.LanguageMapper;
 import com.muyategna.backend.common.service.LanguageService;
+import com.muyategna.backend.location.mapper.CountryMapper;
+import com.muyategna.backend.redis.CacheConstants;
 import com.muyategna.backend.system.context.CountryContextHolder;
 import com.muyategna.backend.user.dto.UserProfileDto;
 import com.muyategna.backend.user.entity.UserProfile;
 import com.muyategna.backend.user.mapper.UserProfileMapper;
 import com.muyategna.backend.user.repository.UserProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +29,9 @@ public class UserProfileServiceImpl implements UserProfileService {
         this.languageService = languageService;
     }
 
+    @Cacheable(value = CacheConstants.CACHE_USER,
+            key = "T(com.muyategna.backend.redis.UserCacheKeyUtil).getUserByIdKey(#id)",
+            unless = "#result == null")
     @Override
     public UserProfileDto findByKeycloakUserId(UUID id) {
         UserProfile userProfile = userProfileRepository.findByKeycloakUserId(id).orElse(null);
@@ -50,6 +56,8 @@ public class UserProfileServiceImpl implements UserProfileService {
         userProfile.setEmail(authToken.getToken().getClaimAsString("email"));
         userProfile.setFirstName(authToken.getToken().getClaimAsString("given_name"));
         userProfile.setLastName(authToken.getToken().getClaimAsString("family_name"));
+
+        userProfile.setCountry(CountryMapper.toEntity(CountryContextHolder.getCountry()));
 
         LanguageDto defaultLanguage = languageService.getDefaultLanguageForCountry(CountryContextHolder.getCountry()).orElseThrow(() -> new RuntimeException("Platform default language not found."));
 

@@ -1,7 +1,5 @@
 package com.muyategna.backend.common.service;
 
-import com.muyategna.backend.common.CommonCacheKeyUtil;
-import com.muyategna.backend.common.Constants;
 import com.muyategna.backend.common.dto.language.LanguageCreateDto;
 import com.muyategna.backend.common.dto.language.LanguageDto;
 import com.muyategna.backend.common.dto.language.LanguageUpdateDto;
@@ -11,9 +9,9 @@ import com.muyategna.backend.common.repository.LanguageRepository;
 import com.muyategna.backend.location.dto.country.CountryDto;
 import com.muyategna.backend.location.mapper.CountryMapper;
 import com.muyategna.backend.location.service.CountryService;
+import com.muyategna.backend.redis.CacheConstants;
 import com.muyategna.backend.system.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -46,32 +44,46 @@ public class LanguageServiceImpl implements LanguageService {
      * @return the Language object if found
      * @throws RuntimeException if no language is found with the given ID
      */
-    @Cacheable(value = Constants.CACHE_COMMON,
-            key = "T(com.muyategna.backend.common.CommonCacheKeyUtil).languageByIdKey(#id)")
+//    @Cacheable(value = CacheConstants.CACHE_COMMON,
+//            key = "T(com.muyategna.backend.redis.CommonCacheKeyUtil).languageByIdKey(#id)")
+//    @Transactional(readOnly = true)
+//    @Override
+//    public LanguageDto getLanguageById(Long id) {
+//        log.info("Retrieving language by ID: {}", id);
+//
+//        // First check if the language is in the cache of all languages
+//        Cache allLanguagesCache = cacheManager.getCache(CacheConstants.CACHE_COMMON);
+//        if (allLanguagesCache != null) {
+//            List<Language> allLanguages = (List<Language>) allLanguagesCache.get(CommonCacheKeyUtil.allLanguagesKey());
+//            if (allLanguages != null && !allLanguages.isEmpty()) {
+//                for (Language language : allLanguages) {
+//                    if (id.equals(language.getId())) {
+//                        return LanguageMapper.toDto(language);
+//                    }
+//                }
+//            }
+//        }
+//
+//        LanguageDto language = languageRepository
+//                .findById(id)
+//                .map(LanguageMapper::toDto)
+//                .orElseThrow(() -> new ResourceNotFoundException("Language not found with id: " + id));
+//        log.info("Language retrieved  successfully: {}", language.getName());
+//        return language;
+//    }
+
+
+    @Cacheable(value = CacheConstants.CACHE_COMMON,
+            key = "T(com.muyategna.backend.redis.CommonCacheKeyUtil).languageByIdKey(#id)")
     @Transactional(readOnly = true)
     @Override
     public LanguageDto getLanguageById(Long id) {
         log.info("Retrieving language by ID: {}", id);
 
-        // First check if the language is in the cache of all languages
-        Cache allLanguagesCache = cacheManager.getCache(Constants.CACHE_COMMON);
-        if (allLanguagesCache != null) {
-            List<Language> allLanguages = (List<Language>) allLanguagesCache.get(CommonCacheKeyUtil.allLanguagesKey());
-            if (allLanguages != null && !allLanguages.isEmpty()) {
-                for (Language language : allLanguages) {
-                    if (id.equals(language.getId())) {
-                        return LanguageMapper.toDto(language);
-                    }
-                }
-            }
-        }
-
-        LanguageDto language = languageRepository
+        return languageRepository
                 .findById(id)
                 .map(LanguageMapper::toDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Language not found with id: " + id));
-        log.info("Language retrieved  successfully: {}", language.getName());
-        return language;
     }
 
 
@@ -81,9 +93,8 @@ public class LanguageServiceImpl implements LanguageService {
      * @param countryDto is the country object
      * @return an Optional containing the default Language if found, otherwise empty
      */
-    @Cacheable(value = Constants.CACHE_COMMON,
-            key = "T(com.muyategna.backend.common.CommonCacheKeyUtil).defaultLanguageForCountryKey(#country.id)")
-    @Transactional(readOnly = true)
+    @Cacheable(value = CacheConstants.CACHE_COMMON,
+            key = "T(com.muyategna.backend.redis.CommonCacheKeyUtil).defaultLanguageForCountryKey(#countryDto.id)")
     @Override
     public Optional<LanguageDto> getDefaultLanguageForCountry(CountryDto countryDto) {
 
@@ -111,19 +122,23 @@ public class LanguageServiceImpl implements LanguageService {
      * This method will return all languages associated with the given country.
      * The languages will include both country specific languages and the global language.
      *
-     * @param countryDto the country object
+     * @param countryId the country id
      * @return a list of languages associated with the given country
      */
-    @Cacheable(value = Constants.CACHE_COMMON,
-            key = "T(com.muyategna.backend.common.CommonCacheKeyUtil).languagesByCountryKey(#countryDto.id)")
+    @Cacheable(value = CacheConstants.CACHE_COMMON,
+            key = "T(com.muyategna.backend.redis.CommonCacheKeyUtil).languagesByCountryKey(#countryId)")
     @Transactional(readOnly = true)
     @Override
-    public List<LanguageDto> getAllLanguagesByCountryPublic(CountryDto countryDto) {
-        log.info("Retrieving all languages for country: {}", countryDto.getName());
-        List<LanguageDto> languages = new ArrayList<>(languageRepository.findByCountry(CountryMapper.toEntity(countryDto)).stream().map(LanguageMapper::toDto).toList());
+    public List<LanguageDto> getAllLanguagesByCountryPublic(Long countryId) {
+        log.info("Retrieving all languages for country with is: {}", countryId);
+        List<LanguageDto> languages = new ArrayList<>(languageRepository
+                .findByCountryId(countryId)
+                .stream()
+                .map(LanguageMapper::toDto)
+                .toList());
         languages.add(getGlobalLanguage());
 
-        log.info("All languages for country {} retrieved successfully", countryDto.getName());
+        log.info("All languages for country with id {} retrieved successfully", countryId);
         return languages;
     }
 
@@ -135,8 +150,8 @@ public class LanguageServiceImpl implements LanguageService {
      * @param locale the language code
      * @return a Language object associated with the given code, or null if not found
      */
-    @Cacheable(value = Constants.CACHE_COMMON,
-            key = "T(com.muyategna.backend.common.CommonCacheKeyUtil).languageByLocaleKey(#locale)")
+    @Cacheable(value = CacheConstants.CACHE_COMMON,
+            key = "T(com.muyategna.backend.redis.CommonCacheKeyUtil).languageByLocaleKey(#locale)")
     @Transactional(readOnly = true)
     @Override
     public LanguageDto getLanguageByLocale(String locale) {
@@ -156,6 +171,9 @@ public class LanguageServiceImpl implements LanguageService {
      *
      * @return a LanguageDto object representing the global language
      */
+    @Transactional(readOnly = true)
+    @Cacheable(value = CacheConstants.CACHE_COMMON,
+            key = "T(com.muyategna.backend.redis.CommonCacheKeyUtil).globalLanguageKey()")
     @Override
     public LanguageDto getGlobalLanguage() {
         log.info("Retrieving global language from the database");
@@ -163,7 +181,7 @@ public class LanguageServiceImpl implements LanguageService {
                 .findByIsGlobal(true)
                 .map(LanguageMapper::toDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Global language not found. Please check the database."));
-        log.info("Global language retrieved successfully: {}", globalLanguage.getName());
+        log.info("Global language retrieved successfully: {}", globalLanguage.getId());
         return globalLanguage;
     }
 

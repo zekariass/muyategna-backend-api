@@ -8,10 +8,12 @@ import com.muyategna.backend.location.mapper.CountryMapper;
 import com.muyategna.backend.location.mapper.CountryTranslationMapper;
 import com.muyategna.backend.location.repository.CountryRepository;
 import com.muyategna.backend.location.repository.CountryTranslationRepository;
+import com.muyategna.backend.redis.CacheConstants;
 import com.muyategna.backend.system.context.LanguageContextHolder;
 import com.muyategna.backend.system.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -135,6 +137,9 @@ public class CountryServiceImpl implements CountryService {
      * @return the country details as a CountryDto
      * @throws ResourceNotFoundException if the country is not found
      */
+    @Cacheable(value = CacheConstants.CACHE_LOCATION,
+            key = "T(com.muyategna.backend.redis.LocationCacheKeyUtil).countryByIsoCode2Key(#countryIsoCode2)",
+            unless = "#result == null")
     @Override
     public CountryDto getCountryByIsoCode2(String countryIsoCode2) {
         log.info("Retrieving country by ISO code: {}", countryIsoCode2);

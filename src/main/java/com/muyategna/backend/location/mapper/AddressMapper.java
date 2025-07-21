@@ -2,6 +2,7 @@ package com.muyategna.backend.location.mapper;
 
 import com.muyategna.backend.location.dto.address.AddressCreateDto;
 import com.muyategna.backend.location.dto.address.AddressDto;
+import com.muyategna.backend.location.dto.address.AddressFlatDto;
 import com.muyategna.backend.location.dto.address.AddressUpdateDto;
 import com.muyategna.backend.location.entity.*;
 import org.locationtech.jts.geom.Coordinate;
@@ -43,6 +44,49 @@ public final class AddressMapper {
     }
 
 
+    public static AddressFlatDto toFlatDto(Address address) {
+        if (address == null) {
+            return null;
+        }
+
+        String countryName = "";
+        String regionName = "";
+        String cityName = "";
+        String subCityOrDivisionName = "";
+
+        if (address.getSubCityOrDivision() != null) {
+            subCityOrDivisionName = address.getSubCityOrDivision().getName();
+        }
+
+        if (address.getCity() != null) {
+            cityName = address.getCity().getName();
+        }
+
+        if (address.getRegion() != null) {
+            regionName = address.getRegion().getName();
+        }
+
+        if (address.getCountry() != null) {
+            countryName = address.getCountry().getName();
+        }
+
+        return AddressFlatDto.builder()
+                .id(address.getId())
+                .countryName(countryName)
+                .regionName(regionName)
+                .cityName(cityName)
+                .subCityOrDivisionName(subCityOrDivisionName)
+                .locality(address.getLocality())
+                .street(address.getStreet())
+                .landmark(address.getLandmark())
+                .postalCode(address.getPostalCode())
+                .latitude(address.getGeoPoint().getY())
+                .longitude(address.getGeoPoint().getX())
+                .fullAddress(address.getFullAddress())
+                .build();
+    }
+
+
     public static Address toEntity(AddressUpdateDto addressDto,
                                    Address address,
                                    Country country,
@@ -61,8 +105,20 @@ public final class AddressMapper {
         address.setStreet(addressDto.getStreet());
         address.setLandmark(addressDto.getLandmark());
         address.setPostalCode(addressDto.getPostalCode());
-        address.setGeoPoint(createPoint(addressDto.getLatitude(), addressDto.getLongitude()));
 
+        if (addressDto.getLatitude() != null && addressDto.getLongitude() != null) {
+            address.setGeoPoint(createPoint(addressDto.getLatitude(), addressDto.getLongitude()));
+        }else if (subCityOrDivision != null && subCityOrDivision.getGeoPoint() != null) {
+            address.setGeoPoint(subCityOrDivision.getGeoPoint());
+        }else if (city != null && city.getGeoPoint() != null) {
+            address.setGeoPoint(city.getGeoPoint());
+        } else if (region != null && region.getGeoPoint() != null) {
+            address.setGeoPoint(region.getGeoPoint());
+        } else if (country != null && country.getGeoPoint() != null) {
+            address.setGeoPoint(country.getGeoPoint());
+        }
+
+        address.setFullAddress(createFullAddress(address));
         return address;
     }
 
@@ -85,7 +141,20 @@ public final class AddressMapper {
         address.setStreet(addressDto.getStreet());
         address.setLandmark(addressDto.getLandmark());
         address.setPostalCode(addressDto.getPostalCode());
-        address.setGeoPoint(createPoint(addressDto.getLatitude(), addressDto.getLongitude()));
+        address.setIsDefaultGeoPoint(true);
+
+        if (addressDto.getLatitude() != null && addressDto.getLongitude() != null) {
+            address.setGeoPoint(createPoint(addressDto.getLatitude(), addressDto.getLongitude()));
+            address.setIsDefaultGeoPoint(false);
+        }else if (subCityOrDivision != null && subCityOrDivision.getGeoPoint() != null) {
+            address.setGeoPoint(subCityOrDivision.getGeoPoint());
+        }else if (city != null && city.getGeoPoint() != null) {
+            address.setGeoPoint(city.getGeoPoint());
+        } else if (region != null && region.getGeoPoint() != null) {
+            address.setGeoPoint(region.getGeoPoint());
+        } else if (country != null && country.getGeoPoint() != null) {
+            address.setGeoPoint(country.getGeoPoint());
+        }
 
         address.setFullAddress(createFullAddress(address));
         return address;

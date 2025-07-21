@@ -36,6 +36,14 @@ public class ServiceProviderDto {
     private Boolean isActive;
     private Boolean isVerified;
     private Boolean isBlocked;
+    private String businessEmail ;
+    private String businessPhone;
+    private String tiktok;
+    private String whatsApp;
+    private String facebook;
+    private String linkedin;
+    private String instagram;
+    private String website;
     private LocalDateTime registeredAt;
     private LocalDateTime updatedAt;
 

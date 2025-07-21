@@ -8,9 +8,9 @@ import java.util.UUID;
 
 public interface UserProfileService {
 
-    public UserProfileDto findByKeycloakUserId(UUID id);
-    public UserProfileDto save(UserProfile userProfile);
-    public UserProfileDto createProfileFromKeycloakAuthToken(JwtAuthenticationToken authToken);
-    public void updateDefaultLanguageForUser(Long id, String languageCode);
+    UserProfileDto findByKeycloakUserId(UUID id);
+    UserProfileDto save(UserProfile userProfile);
+    UserProfileDto createProfileFromKeycloakAuthToken(JwtAuthenticationToken authToken);
+    void updateDefaultLanguageForUser(Long id, String languageCode);
 
 }

@@ -10,6 +10,7 @@ import org.springframework.retry.annotation.EnableRetry;
 public class MuyategnaBackendApiApplication {
 
 	public static void main(String[] args) {
+
 		SpringApplication.run(MuyategnaBackendApiApplication.class, args);
 	}
 

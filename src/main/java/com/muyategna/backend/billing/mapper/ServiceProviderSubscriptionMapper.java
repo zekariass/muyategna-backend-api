@@ -14,13 +14,55 @@ public final class ServiceProviderSubscriptionMapper {
         return ServiceProviderSubscriptionDto.builder()
                 .id(serviceProviderSubscription.getId())
                 .providerId(serviceProviderSubscription.getProvider().getId())
-                .subscriptionPlan(subscriptionPlanLocalizedDto)
+                .subscriptionPlanId(serviceProviderSubscription.getSubscriptionPlan().getId())
+                .renewalStatus(serviceProviderSubscription.getRenewalStatus())
+                .nextBillingDate(serviceProviderSubscription.getNextBillingDate())
+                .cancelledAt(serviceProviderSubscription.getCancelledAt())
+                .renewalAttemptedAt(serviceProviderSubscription.getRenewalAttemptedAt())
+                .startedAt(serviceProviderSubscription.getStartedAt())
+                .endDate(serviceProviderSubscription.getEndDate())
+                .trialPeriodStartedAt(serviceProviderSubscription.getTrialPeriodStartedAt())
+                .trialPeriodEndsAt(serviceProviderSubscription.getTrialPeriodEndsAt())
+                .gracePeriodStartedAt(serviceProviderSubscription.getGracePeriodStartedAt())
+                .gracePeriodEndsAt(serviceProviderSubscription.getGracePeriodEndsAt())
+                .extraData(serviceProviderSubscription.getExtraData())
+                .isActive(serviceProviderSubscription.getIsActive())
                 .initialCredits(serviceProviderSubscription.getInitialCredits())
                 .usedCredits(serviceProviderSubscription.getUsedCredits())
+                .autoRenew(serviceProviderSubscription.getAutoRenew())
+                .lastBillingDate(serviceProviderSubscription.getLastBillingDate())
+                .createdAt(serviceProviderSubscription.getCreatedAt())
+                .updatedAt(serviceProviderSubscription.getUpdatedAt())
                 .upgradedFromId(serviceProviderSubscription.getUpgradedFrom().getId())
+                .downgradedFromId(serviceProviderSubscription.getDowngradedFrom().getId())
+                .build();
+    }
+
+    public static ServiceProviderSubscriptionDto toDto(ServiceProviderSubscription serviceProviderSubscription) {
+        return ServiceProviderSubscriptionDto.builder()
+                .id(serviceProviderSubscription.getId())
+                .providerId(serviceProviderSubscription.getProvider().getId())
+                .subscriptionPlanId(serviceProviderSubscription.getSubscriptionPlan().getId())
+                .renewalStatus(serviceProviderSubscription.getRenewalStatus())
+                .nextBillingDate(serviceProviderSubscription.getNextBillingDate())
+                .cancelledAt(serviceProviderSubscription.getCancelledAt())
+                .renewalAttemptedAt(serviceProviderSubscription.getRenewalAttemptedAt())
+                .startedAt(serviceProviderSubscription.getStartedAt())
+                .endDate(serviceProviderSubscription.getEndDate())
+                .trialPeriodStartedAt(serviceProviderSubscription.getTrialPeriodStartedAt())
+                .trialPeriodEndsAt(serviceProviderSubscription.getTrialPeriodEndsAt())
+                .gracePeriodStartedAt(serviceProviderSubscription.getGracePeriodStartedAt())
+                .gracePeriodEndsAt(serviceProviderSubscription.getGracePeriodEndsAt())
+                .extraData(serviceProviderSubscription.getExtraData())
                 .isActive(serviceProviderSubscription.getIsActive())
-                .expiresAt(serviceProviderSubscription.getExpiresAt())
-                .subscribedAt(serviceProviderSubscription.getSubscribedAt())
+                .initialCredits(serviceProviderSubscription.getInitialCredits())
+                .usedCredits(serviceProviderSubscription.getUsedCredits())
+                .autoRenew(serviceProviderSubscription.getAutoRenew())
+                .lastBillingDate(serviceProviderSubscription.getLastBillingDate())
+                .createdAt(serviceProviderSubscription.getCreatedAt())
+                .updatedAt(serviceProviderSubscription.getUpdatedAt())
+                .upgradedFromId(serviceProviderSubscription.getUpgradedFrom().getId())
+                .downgradedFromId(serviceProviderSubscription.getDowngradedFrom().getId())
                 .build();
     }
 
@@ -32,11 +74,23 @@ public final class ServiceProviderSubscriptionMapper {
         serviceProviderSubscription.setId(serviceProviderSubscriptionDto.getId());
         serviceProviderSubscription.setProvider(serviceProvider);
         serviceProviderSubscription.setSubscriptionPlan(subscriptionPlan);
+        serviceProviderSubscription.setRenewalStatus(serviceProviderSubscriptionDto.getRenewalStatus());
+        serviceProviderSubscription.setNextBillingDate(serviceProviderSubscriptionDto.getNextBillingDate());
+        serviceProviderSubscription.setCancelledAt(serviceProviderSubscriptionDto.getCancelledAt());
+        serviceProviderSubscription.setRenewalAttemptedAt(serviceProviderSubscriptionDto.getRenewalAttemptedAt());
+        serviceProviderSubscription.setStartedAt(serviceProviderSubscriptionDto.getStartedAt());
+        serviceProviderSubscription.setEndDate(serviceProviderSubscriptionDto.getEndDate());
+        serviceProviderSubscription.setTrialPeriodStartedAt(serviceProviderSubscriptionDto.getTrialPeriodStartedAt());
+        serviceProviderSubscription.setTrialPeriodEndsAt(serviceProviderSubscriptionDto.getTrialPeriodEndsAt());
+        serviceProviderSubscription.setGracePeriodStartedAt(serviceProviderSubscriptionDto.getGracePeriodStartedAt());
+        serviceProviderSubscription.setGracePeriodEndsAt(serviceProviderSubscriptionDto.getGracePeriodEndsAt());
+        serviceProviderSubscription.setExtraData(serviceProviderSubscriptionDto.getExtraData());
+        serviceProviderSubscription.setIsActive(serviceProviderSubscriptionDto.getIsActive());
         serviceProviderSubscription.setInitialCredits(serviceProviderSubscriptionDto.getInitialCredits());
         serviceProviderSubscription.setUsedCredits(serviceProviderSubscriptionDto.getUsedCredits());
-        serviceProviderSubscription.setIsActive(serviceProviderSubscriptionDto.getIsActive());
-        serviceProviderSubscription.setExpiresAt(serviceProviderSubscriptionDto.getExpiresAt());
-        serviceProviderSubscription.setSubscribedAt(serviceProviderSubscriptionDto.getSubscribedAt());
+        serviceProviderSubscription.setAutoRenew(serviceProviderSubscriptionDto.getAutoRenew());
+        serviceProviderSubscription.setLastBillingDate(serviceProviderSubscriptionDto.getLastBillingDate());
+        serviceProviderSubscription.setCreatedAt(serviceProviderSubscriptionDto.getCreatedAt());
         return serviceProviderSubscription;
     }
 
@@ -48,11 +102,14 @@ public final class ServiceProviderSubscriptionMapper {
         serviceProviderSubscription.setId(serviceProviderSubscriptionDto.getId());
         serviceProviderSubscription.setProvider(serviceProvider);
         serviceProviderSubscription.setSubscriptionPlan(subscriptionPlan);
-        serviceProviderSubscription.setInitialCredits(serviceProviderSubscriptionDto.getInitialCredits());
-        serviceProviderSubscription.setUsedCredits(serviceProviderSubscriptionDto.getUsedCredits());
-        serviceProviderSubscription.setIsActive(serviceProviderSubscriptionDto.getIsActive());
-        serviceProviderSubscription.setExpiresAt(serviceProviderSubscriptionDto.getExpiresAt());
-        serviceProviderSubscription.setSubscribedAt(serviceProviderSubscriptionDto.getSubscribedAt());
+
+        return serviceProviderSubscription;
+    }
+
+
+    public static ServiceProviderSubscription toBasicEntity(ServiceProviderSubscriptionDto serviceProviderSubscriptionDto) {
+        ServiceProviderSubscription serviceProviderSubscription = new ServiceProviderSubscription();
+        serviceProviderSubscription.setId(serviceProviderSubscriptionDto.getId()); // Assuming ID is generated by the database
         return serviceProviderSubscription;
     }
 }

@@ -25,7 +25,7 @@ public class ServiceCountryAvailabilityUpdateDto {
     private Long country;
     private Boolean isActive;
 
-    @NotNull(message = "Price model cannot be null")
+    @NotNull(message = "Price dto cannot be null")
     private PriceModel priceModel;
 
     @NotNull(message = "Base price cannot be null")

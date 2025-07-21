@@ -4,6 +4,9 @@ import com.muyategna.backend.location.dto.country.CountryDto;
 import com.muyategna.backend.location.dto.region.*;
 import com.muyategna.backend.location.entity.Region;
 import com.muyategna.backend.location.entity.RegionTranslation;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
 
 public final class RegionMapper {
 
@@ -62,6 +65,8 @@ public final class RegionMapper {
         dto.setCountryId(region.getCountry().getId());
         dto.setCreatedAt(region.getCreatedAt());
         dto.setUpdatedAt(region.getUpdatedAt());
+        dto.setLongitude(region.getGeoPoint().getX());
+        dto.setLatitude(region.getGeoPoint().getY());
         return dto;
     }
 
@@ -74,6 +79,7 @@ public final class RegionMapper {
         region.setName(dto.getName());
         region.setDescription(dto.getDescription());
         region.setCountry(CountryMapper.toEntity(countryDto));
+        region.setGeoPoint(createPoint(dto.getLatitude(), dto.getLongitude()));
         return region;
     }
 
@@ -87,6 +93,7 @@ public final class RegionMapper {
         region.setName(dto.getName());
         region.setDescription(dto.getDescription());
         region.setCountry(CountryMapper.toEntity(countryDto));
+        region.setGeoPoint(createPoint(dto.getLatitude(), dto.getLongitude()));
         return region;
     }
 
@@ -129,6 +136,10 @@ public final class RegionMapper {
             dto.setName(region.getName());
             dto.setDescription(region.getDescription());
             dto.setCountryId(region.getCountry().getId());
+            if (region.getGeoPoint() != null) {
+                dto.setLongitude(region.getGeoPoint().getX());
+                dto.setLatitude(region.getGeoPoint().getY());
+            }
             return dto;
         }
 
@@ -136,6 +147,18 @@ public final class RegionMapper {
         dto.setName(regionTranslation.getName());
         dto.setDescription(regionTranslation.getDescription());
         dto.setCountryId(region.getCountry().getId());
+        dto.setLongitude(region.getGeoPoint().getX());
+        dto.setLatitude(region.getGeoPoint().getY());
+        if (region.getGeoPoint() != null) {
+            dto.setLongitude(region.getGeoPoint().getX());
+            dto.setLatitude(region.getGeoPoint().getY());
+        }
+
         return dto;
+    }
+
+    private static Point createPoint(Double latitude, Double longitude) {
+        GeometryFactory geometryFactory = new GeometryFactory();
+        return geometryFactory.createPoint(new Coordinate(longitude, latitude));
     }
 }

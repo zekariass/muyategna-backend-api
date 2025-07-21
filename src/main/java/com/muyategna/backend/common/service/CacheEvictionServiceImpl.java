@@ -1,10 +1,10 @@
 package com.muyategna.backend.common.service;
 
-import com.muyategna.backend.common.CommonCacheKeyUtil;
-import com.muyategna.backend.common.Constants;
+import com.muyategna.backend.redis.CacheConstants;
+import com.muyategna.backend.redis.CommonCacheKeyUtil;
 import com.muyategna.backend.common.entity.Language;
 import com.muyategna.backend.common.repository.LanguageRepository;
-import com.muyategna.backend.location.LocationCacheKeyUtil;
+import com.muyategna.backend.redis.LocationCacheKeyUtil;
 import com.muyategna.backend.location.entity.Country;
 import com.muyategna.backend.location.entity.Region;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class CacheEvictionServiceImpl implements CacheEvictionService {
 
         log.info("Evicting region with regionId={} from cache", region.getId());
 
-        Cache cache = cacheManager.getCache(Constants.CACHE_LOCATION);
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_LOCATION);
         if (cache == null) {
             return;
         }
@@ -64,7 +64,7 @@ public class CacheEvictionServiceImpl implements CacheEvictionService {
 
         log.info("Evicting language with languageId={} from cache", language.getId());
 
-        Cache cache = cacheManager.getCache(Constants.CACHE_COMMON);
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_COMMON);
         if (cache == null) {
             return;
         }
@@ -87,7 +87,7 @@ public class CacheEvictionServiceImpl implements CacheEvictionService {
 
         log.info("Evicting country with countryId={} from cache", country.getId());
 
-        Cache cache = cacheManager.getCache(Constants.CACHE_LOCATION);
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_LOCATION);
         if (cache == null) {
             return;
         }

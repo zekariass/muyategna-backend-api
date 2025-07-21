@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -23,5 +24,7 @@ public class ServiceProviderInvoiceItemDto {
     private BigDecimal subTotalAmount;
     private BigDecimal taxAmount;
     private BigDecimal totalAmount;
+    private Map<String, String> extraData;
+
 }
 

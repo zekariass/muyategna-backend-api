@@ -5,11 +5,13 @@ import com.muyategna.backend.location.entity.Country;
 import com.muyategna.backend.location.entity.Region;
 import com.muyategna.backend.service_provider.entity.ServiceProvider;
 import com.muyategna.backend.service_provider.entity.ServiceProviderTaxInfo;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -17,6 +19,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "service_provider_invoice")
@@ -69,6 +72,10 @@ public class ServiceProviderInvoice {
     private InvoiceStatusEnum status;
 
     private Boolean isLocked = false;
+
+    @Column(name = "extra_data", columnDefinition = "jsonb")
+    @Type(JsonBinaryType.class)
+    private Map<String, String> extraData;
 
     @CreatedDate
     private LocalDateTime issuedAt;

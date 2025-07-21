@@ -74,7 +74,7 @@ public class LanguageFilter extends OncePerRequestFilter {
             // Get the country from CountryContextHolder
             CountryDto countryDto = CountryContextHolder.getCountry();
 
-            List<LanguageDto> languages = new ArrayList<>(languageService.getAllLanguagesByCountryPublic(countryDto));
+            List<LanguageDto> languages = new ArrayList<>(languageService.getAllLanguagesByCountryPublic(countryDto.getId()));
             LanguageDto globalLanguage = languageService.getGlobalLanguage();
 
             // The user must be using country specific languages or the global language

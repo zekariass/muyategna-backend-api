@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -27,4 +28,5 @@ public class DiscountPlanCreateDto {
     private Boolean isActive;
     private Boolean couponRequired;
     private DiscountUserType appliesTo;
+    private Map<String, Object> extraData;
 }

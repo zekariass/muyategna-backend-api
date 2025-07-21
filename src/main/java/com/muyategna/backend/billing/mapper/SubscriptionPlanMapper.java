@@ -23,11 +23,13 @@ public final class SubscriptionPlanMapper {
                 .billingCycle(subscriptionPlan.getBillingCycle())
                 .billingCycleCount(subscriptionPlan.getBillingCycleCount())
                 .trialPeriodDays(subscriptionPlan.getTrialPeriodDays())
-                .creditsIncluded(subscriptionPlan.getCreditsIncluded())
                 .sortOrder(subscriptionPlan.getSortOrder())
                 .isDefault(subscriptionPlan.getIsDefault())
                 .isActive(subscriptionPlan.getIsActive())
-                .slug(subscriptionPlan.getSlug())
+                .creditsIncluded(subscriptionPlan.getCreditsIncluded())
+                .upgradeable(subscriptionPlan.getUpgradeable())
+                .downgradeable(subscriptionPlan.getDowngradeable())
+                .extraData(subscriptionPlan.getExtraData())
                 .createdAt(subscriptionPlan.getCreatedAt())
                 .updatedAt(subscriptionPlan.getUpdatedAt())
                 .build();
@@ -45,11 +47,13 @@ public final class SubscriptionPlanMapper {
                 .billingCycle(subscriptionPlan.getBillingCycle())
                 .billingCycleCount(subscriptionPlan.getBillingCycleCount())
                 .trialPeriodDays(subscriptionPlan.getTrialPeriodDays())
-                .creditsIncluded(subscriptionPlan.getCreditsIncluded())
                 .sortOrder(subscriptionPlan.getSortOrder())
                 .isDefault(subscriptionPlan.getIsDefault())
                 .isActive(subscriptionPlan.getIsActive())
-                .slug(subscriptionPlan.getSlug())
+                .creditsIncluded(subscriptionPlan.getCreditsIncluded())
+                .upgradeable(subscriptionPlan.getUpgradeable())
+                .downgradeable(subscriptionPlan.getDowngradeable())
+                .extraData(subscriptionPlan.getExtraData())
                 .build();
     }
 
@@ -65,11 +69,13 @@ public final class SubscriptionPlanMapper {
                 .billingCycle(subscriptionPlan.getBillingCycle())
                 .billingCycleCount(subscriptionPlan.getBillingCycleCount())
                 .trialPeriodDays(subscriptionPlan.getTrialPeriodDays())
-                .creditsIncluded(subscriptionPlan.getCreditsIncluded())
                 .sortOrder(subscriptionPlan.getSortOrder())
                 .isDefault(subscriptionPlan.getIsDefault())
                 .isActive(subscriptionPlan.getIsActive())
-                .slug(subscriptionPlan.getSlug())
+                .creditsIncluded(subscriptionPlan.getCreditsIncluded())
+                .upgradeable(subscriptionPlan.getUpgradeable())
+                .downgradeable(subscriptionPlan.getDowngradeable())
+                .extraData(subscriptionPlan.getExtraData())
                 .build();
     }
 
@@ -105,11 +111,13 @@ public final class SubscriptionPlanMapper {
         subscriptionPlan.setBillingCycle(subscriptionPlanDto.getBillingCycle());
         subscriptionPlan.setBillingCycleCount(subscriptionPlanDto.getBillingCycleCount());
         subscriptionPlan.setTrialPeriodDays(subscriptionPlanDto.getTrialPeriodDays());
-        subscriptionPlan.setCreditsIncluded(subscriptionPlanDto.getCreditsIncluded());
         subscriptionPlan.setSortOrder(subscriptionPlanDto.getSortOrder());
         subscriptionPlan.setIsDefault(subscriptionPlanDto.getIsDefault());
         subscriptionPlan.setIsActive(subscriptionPlanDto.getIsActive());
-        subscriptionPlan.setSlug(subscriptionPlanDto.getSlug());
+        subscriptionPlan.setCreditsIncluded(subscriptionPlanDto.getCreditsIncluded());
+        subscriptionPlan.setUpgradeable(subscriptionPlanDto.getUpgradeable());
+        subscriptionPlan.setDowngradeable(subscriptionPlanDto.getDowngradeable());
+        subscriptionPlan.setExtraData(subscriptionPlanDto.getExtraData());
         subscriptionPlan.setUpdatedAt(subscriptionPlanDto.getUpdatedAt());
         return subscriptionPlan;
     }
@@ -126,11 +134,13 @@ public final class SubscriptionPlanMapper {
         subscriptionPlan.setBillingCycle(subscriptionPlanDto.getBillingCycle());
         subscriptionPlan.setBillingCycleCount(subscriptionPlanDto.getBillingCycleCount());
         subscriptionPlan.setTrialPeriodDays(subscriptionPlanDto.getTrialPeriodDays());
-        subscriptionPlan.setCreditsIncluded(subscriptionPlanDto.getCreditsIncluded());
         subscriptionPlan.setSortOrder(subscriptionPlanDto.getSortOrder());
         subscriptionPlan.setIsDefault(subscriptionPlanDto.getIsDefault());
         subscriptionPlan.setIsActive(subscriptionPlanDto.getIsActive());
-        subscriptionPlan.setSlug(subscriptionPlanDto.getSlug());
+        subscriptionPlan.setCreditsIncluded(subscriptionPlanDto.getCreditsIncluded());
+        subscriptionPlan.setUpgradeable(subscriptionPlanDto.getUpgradeable());
+        subscriptionPlan.setDowngradeable(subscriptionPlanDto.getDowngradeable());
+        subscriptionPlan.setExtraData(subscriptionPlanDto.getExtraData());
         return subscriptionPlan;
     }
 
@@ -145,11 +155,13 @@ public final class SubscriptionPlanMapper {
         subscriptionPlan.setBillingCycle(subscriptionPlanDto.getBillingCycle());
         subscriptionPlan.setBillingCycleCount(subscriptionPlanDto.getBillingCycleCount());
         subscriptionPlan.setTrialPeriodDays(subscriptionPlanDto.getTrialPeriodDays());
-        subscriptionPlan.setCreditsIncluded(subscriptionPlanDto.getCreditsIncluded());
         subscriptionPlan.setSortOrder(subscriptionPlanDto.getSortOrder());
         subscriptionPlan.setIsDefault(subscriptionPlanDto.getIsDefault());
         subscriptionPlan.setIsActive(subscriptionPlanDto.getIsActive());
-        subscriptionPlan.setSlug(subscriptionPlanDto.getSlug());
+        subscriptionPlan.setCreditsIncluded(subscriptionPlanDto.getCreditsIncluded());
+        subscriptionPlan.setUpgradeable(subscriptionPlanDto.getUpgradeable());
+        subscriptionPlan.setDowngradeable(subscriptionPlanDto.getDowngradeable());
+        subscriptionPlan.setExtraData(subscriptionPlanDto.getExtraData());
         return subscriptionPlan;
     }
 }

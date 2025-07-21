@@ -21,6 +21,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -67,8 +68,9 @@ public class SystemSecurityConfig {
                     @Override
                     public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
                         CorsConfiguration config = new CorsConfiguration();
-                        config.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
-                        config.setAllowedMethods(Collections.singletonList("*"));
+//                        config.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
+                        config.setAllowedOrigins(Arrays.asList("http://localhost:4200", "http://localhost:8080"));
+                        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                         config.setAllowCredentials(true);
                         config.setAllowedHeaders(Collections.singletonList("*"));
                         config.setExposedHeaders(List.of("Authorization"));
@@ -82,6 +84,8 @@ public class SystemSecurityConfig {
 //                                "/webjars/**", "/docs").permitAll()
                                 .requestMatchers(Constants.PUBLIC_API_ENDPOINTS_FOR_ACCESS.toArray(new String[0])).permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/public/**").permitAll()
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Pre-flight request
                                 .anyRequest().authenticated()
                 );
         http.exceptionHandling(exc -> exc
@@ -98,4 +102,22 @@ public class SystemSecurityConfig {
         return http.build();
 
     }
+
+
+//    @Bean
+//    public FilterRegistrationBean<CorsFilter> corsFilterRegistrationBean() {
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        CorsConfiguration config = new CorsConfiguration();
+//        config.setAllowedOrigins(List.of("http://localhost:4200", "http://localhost:8080"));
+//        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+//        config.setAllowedHeaders(List.of("*"));
+//        config.setExposedHeaders(List.of("Authorization"));
+//        config.setAllowCredentials(true);
+//        config.setMaxAge(3600L);
+//        source.registerCorsConfiguration("/**", config);
+//
+//        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
+//        bean.setOrder(Ordered.HIGHEST_PRECEDENCE); // Run before Spring Security
+//        return bean;
+//    }
 }

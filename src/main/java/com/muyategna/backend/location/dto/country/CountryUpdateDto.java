@@ -33,4 +33,10 @@ public class CountryUpdateDto {
     private String currency;
     
     private String taxpayerIdType;
+
+    @NotNull(message = "Latitude is required")
+    private Double latitude;
+
+    @NotNull(message = "Longitude is required")
+    private Double longitude;
 }

@@ -1,5 +1,7 @@
 package com.muyategna.backend.user.controller;
 
+import com.muyategna.backend.common.ApiResponse;
+import com.muyategna.backend.user.assembler.UserRegistrationDtoModelPublicAssembler;
 import com.muyategna.backend.user.dto.UserRegistrationDto;
 import com.muyategna.backend.user.dto.UserRegistrationResultDto;
 import com.muyategna.backend.user.exception.DuplicateUserException;
@@ -10,10 +12,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 /**
  * UserPublicController handles user-related operations such as creating users, assigning roles, and retrieving user information.
@@ -24,10 +31,12 @@ import org.springframework.web.bind.annotation.*;
 public class UserPublicController {
 
     private final UserService userService;
+    private final UserRegistrationDtoModelPublicAssembler assembler;
 
     @Autowired
-    public UserPublicController(UserService userService) {
+    public UserPublicController(UserService userService, UserRegistrationDtoModelPublicAssembler assembler) {
         this.userService = userService;
+        this.assembler = assembler;
     }
 
     /**
@@ -36,12 +45,12 @@ public class UserPublicController {
      * @param id the user's id.
      * @return a UserRegistrationResultDto containing the user's information.
      */
-    @GetMapping("/{id}")
-    @Operation(summary = "Get user by id", description = "Retrieve a user by id")
-    public ResponseEntity<UserRegistrationResultDto> findById(@Parameter(required = true, description = "User id") @PathVariable String id) {
-        var user = userService.getById(id);
-        return ResponseEntity.ok(user);
-    }
+//    @GetMapping("/{id}")
+//    @Operation(summary = "Get user by id", description = "Retrieve a user by id")
+//    public ResponseEntity<UserRegistrationResultDto> findById(@Parameter(required = true, description = "User id") @PathVariable String id) {
+//        var user = userService.getById(id);
+//        return ResponseEntity.ok(user);
+//    }
 
     /**
      * Creates a new user.
@@ -53,11 +62,21 @@ public class UserPublicController {
      */
     @PostMapping
     @Operation(summary = "Create a new user", description = "Create a new user")
-    public ResponseEntity<UserRegistrationResultDto> createUser(@Parameter(required = true, description = "User registration data") @RequestBody UserRegistrationDto userRegistrationDto) {
+    public ResponseEntity<ApiResponse<EntityModel<UserRegistrationResultDto>>> createUser(
+            @Parameter(required = true, description = "User registration data") @Valid @RequestBody UserRegistrationDto userRegistrationDto,
+            HttpServletRequest request) {
         UserRegistrationResultDto responseDto = userService.createUser(userRegistrationDto);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(responseDto);
+        EntityModel<UserRegistrationResultDto> model = assembler.toModel(responseDto, request);
+
+        ApiResponse<EntityModel<UserRegistrationResultDto>> response = ApiResponse.<EntityModel<UserRegistrationResultDto>>builder()
+                .statusCode(HttpStatus.CREATED.value())
+                .success(true)
+                .message("User created successfully")
+                .path(request.getRequestURI())
+                .timestamp(LocalDateTime.now())
+                .data(model)
+                .build();
+        return ResponseEntity.ok(response);
     }
 
     /**

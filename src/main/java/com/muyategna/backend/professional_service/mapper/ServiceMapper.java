@@ -2,6 +2,7 @@ package com.muyategna.backend.professional_service.mapper;
 
 import com.muyategna.backend.professional_service.dto.service.ServiceDto;
 import com.muyategna.backend.professional_service.dto.service.ServiceLocalizedDto;
+import com.muyategna.backend.professional_service.dto.service.ServiceMinimalLocalizedDto;
 import com.muyategna.backend.professional_service.entity.Service;
 import com.muyategna.backend.professional_service.entity.ServiceCategory;
 import com.muyategna.backend.professional_service.entity.ServiceTranslation;
@@ -50,15 +51,20 @@ public final class ServiceMapper {
             return null;
         }
 
+//        if (serviceTranslation == null) {
+//            return ServiceLocalizedDto.builder()
+//                    .id(service.getId())
+//                    .serviceCategoryId(service.getServiceCategoryId())
+//                    .name(service.getName())
+//                    .description(service.getDescription())
+//                    .createdAt(service.getCreatedAt())
+//                    .updatedAt(service.getUpdatedAt())
+//                    .build();
+//        }
+
         if (serviceTranslation == null) {
-            return ServiceLocalizedDto.builder()
-                    .id(service.getId())
-                    .serviceCategoryId(service.getServiceCategoryId())
-                    .name(service.getName())
-                    .description(service.getDescription())
-                    .createdAt(service.getCreatedAt())
-                    .updatedAt(service.getUpdatedAt())
-                    .build();
+            throw new ResourceNotFoundException("ServiceTranslation cannot be null for service: " + service.getId());
+
         }
 
         return ServiceLocalizedDto.builder()
@@ -68,6 +74,23 @@ public final class ServiceMapper {
                 .description(serviceTranslation.getDescription())
                 .createdAt(service.getCreatedAt())
                 .updatedAt(service.getUpdatedAt())
+                .build();
+    }
+
+
+    public static ServiceMinimalLocalizedDto toMinimalLocalizedDto(Service service, ServiceTranslation serviceTranslation) {
+        if (service == null) {
+            return null;
+        }
+
+        if (serviceTranslation == null) {
+            throw new ResourceNotFoundException("ServiceTranslation cannot be null for service: " + service.getId());
+
+        }
+
+        return ServiceMinimalLocalizedDto.builder()
+                .id(service.getId())
+                .name(serviceTranslation.getName())
                 .build();
     }
 

@@ -25,6 +25,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(of = "id")
 @EntityListeners(AuditingEntityListener.class)
 public class ServiceProvider {
     @Id
@@ -94,6 +95,15 @@ public class ServiceProvider {
     private Boolean isActive = false;
     private Boolean isBlocked = false;
 
+    private String businessEmail ;
+    private String businessPhone;
+    private String tiktok;
+    private String whatsapp;
+    private String facebook;
+    private String linkedin;
+    private String instagram;
+    private String website;
+
     @CreatedDate
     @Column(name = "registered_at", updatable = false)
     private LocalDateTime registeredAt = LocalDateTime.now();
@@ -101,6 +111,5 @@ public class ServiceProvider {
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
-
 }
 

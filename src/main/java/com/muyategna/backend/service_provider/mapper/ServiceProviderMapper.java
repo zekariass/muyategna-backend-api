@@ -30,6 +30,14 @@ public final class ServiceProviderMapper {
                 .isActive(serviceProvider.getIsActive())
                 .isVerified(serviceProvider.getIsVerified())
                 .isBlocked(serviceProvider.getIsBlocked())
+                .businessEmail(serviceProvider.getBusinessEmail())
+                .businessPhone(serviceProvider.getBusinessPhone())
+                .website(serviceProvider.getWebsite())
+                .tiktok(serviceProvider.getTiktok())
+                .whatsApp(serviceProvider.getWhatsapp())
+                .facebook(serviceProvider.getFacebook())
+                .linkedin(serviceProvider.getLinkedin())
+                .instagram(serviceProvider.getInstagram())
                 .registeredAt(serviceProvider.getRegisteredAt())
                 .build();
     }
@@ -55,6 +63,17 @@ public final class ServiceProviderMapper {
         serviceProvider.setYearsOfExperience(serviceProviderDto.getYearsOfExperience());
         serviceProvider.setVerificationStatus(serviceProviderDto.getVerificationStatus());
         serviceProvider.setPortfolioUrl(serviceProviderDto.getPortfolioUrl());
+        serviceProvider.setBusinessEmail(serviceProviderDto.getBusinessEmail());
+        serviceProvider.setBusinessPhone(serviceProviderDto.getBusinessPhone());
+        serviceProvider.setWebsite(serviceProviderDto.getWebsite());
+        serviceProvider.setTiktok(serviceProviderDto.getTiktok());
+        serviceProvider.setWhatsapp(serviceProviderDto.getWhatsApp());
+        serviceProvider.setFacebook(serviceProviderDto.getFacebook());
+        serviceProvider.setLinkedin(serviceProviderDto.getLinkedin());
+        serviceProvider.setInstagram(serviceProviderDto.getInstagram());
+        serviceProvider.setIsActive(serviceProviderDto.getIsActive());
+        serviceProvider.setIsVerified(serviceProviderDto.getIsVerified());
+        serviceProvider.setIsBlocked(serviceProviderDto.getIsBlocked());
         serviceProvider.setRegisteredAt(serviceProviderDto.getRegisteredAt());
 
         return serviceProvider;
@@ -78,6 +97,9 @@ public final class ServiceProviderMapper {
         serviceProvider.setBusinessLogoUrl(serviceProviderDto.getBusinessLogoUrl());
         serviceProvider.setYearsOfExperience(serviceProviderDto.getYearsOfExperience());
         serviceProvider.setPortfolioUrl(serviceProviderDto.getPortfolioUrl());
+        serviceProvider.setBusinessEmail(serviceProviderDto.getBusinessEmail());
+        serviceProvider.setBusinessPhone(serviceProviderDto.getBusinessPhone());
+        serviceProvider.setIsActive(true);
 
         return serviceProvider;
 
@@ -100,6 +122,14 @@ public final class ServiceProviderMapper {
         serviceProvider.setYearsOfExperience(serviceProviderDto.getYearsOfExperience());
         serviceProvider.setPortfolioUrl(serviceProviderDto.getPortfolioUrl());
         serviceProvider.setIsActive(serviceProviderDto.getIsActive());
+        serviceProvider.setBusinessEmail(serviceProviderDto.getBusinessEmail());
+        serviceProvider.setBusinessPhone(serviceProviderDto.getBusinessPhone());
+        serviceProvider.setWebsite(serviceProviderDto.getWebsite());
+        serviceProvider.setTiktok(serviceProviderDto.getTiktok());
+        serviceProvider.setWhatsapp(serviceProviderDto.getWhatsApp());
+        serviceProvider.setFacebook(serviceProviderDto.getFacebook());
+        serviceProvider.setLinkedin(serviceProviderDto.getLinkedin());
+        serviceProvider.setInstagram(serviceProviderDto.getInstagram());
         return serviceProvider;
 
     }

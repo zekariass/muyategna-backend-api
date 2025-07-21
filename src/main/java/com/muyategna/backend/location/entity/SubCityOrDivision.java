@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.locationtech.jts.geom.Point;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -32,6 +35,10 @@ public class SubCityOrDivision {
 
     private String name;
     private String description;
+
+    @Column(name = "geo_point")
+    @JdbcTypeCode(SqlTypes.GEOGRAPHY)
+    private Point geoPoint;
 
     @OneToMany(mappedBy = "subCityOrDivision", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SubCityOrDivisionTranslation> translations;

@@ -21,4 +21,10 @@ public class CityUpdateDto {
     private Long regionId;
 
     private String description;
+
+    @NotNull(message = "Latitude is required")
+    private Double latitude;
+
+    @NotNull(message = "Longitude is required")
+    private Double longitude;
 }

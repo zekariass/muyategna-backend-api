@@ -5,7 +5,9 @@ import com.muyategna.backend.location.dto.address.AddressDto;
 import com.muyategna.backend.location.dto.address.AddressUpdateDto;
 import com.muyategna.backend.location.entity.*;
 import com.muyategna.backend.location.mapper.AddressMapper;
+import com.muyategna.backend.location.mapper.CountryMapper;
 import com.muyategna.backend.location.repository.*;
+import com.muyategna.backend.system.context.CountryContextHolder;
 import com.muyategna.backend.system.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,14 +34,18 @@ public class AddressServiceImpl implements AddressService {
     @Transactional
     @Override
     public Address createAddress(AddressCreateDto addressCreateDto) {
-        Country country = countryRepository.findById(addressCreateDto.getCountryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Country not found with id: " + addressCreateDto.getCountryId()));
+        Country country = CountryMapper.toEntity(CountryContextHolder.getCountry());
         Region region = regionRepository.findById(addressCreateDto.getRegionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Region not found with id: " + addressCreateDto.getRegionId()));
         City city = cityRepository.findById(addressCreateDto.getCityId())
                 .orElseThrow(() -> new ResourceNotFoundException("City not found with id: " + addressCreateDto.getCityId()));
-        SubCityOrDivision subCityOrDivision = subCityOrDivisionRepository.findById(addressCreateDto.getSubCityOrDivisionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Sub city or division not found with id: " + addressCreateDto.getSubCityOrDivisionId()));
+
+        SubCityOrDivision subCityOrDivision = null;
+        if (addressCreateDto.getSubCityOrDivisionId() != null) {
+            subCityOrDivision = subCityOrDivisionRepository.findById(addressCreateDto.getSubCityOrDivisionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Sub city or division not found with id: " + addressCreateDto.getSubCityOrDivisionId()));
+
+        }
 
         Address address = AddressMapper.toEntity(addressCreateDto, country, region, city, subCityOrDivision);
         return addressRepository.save(address);

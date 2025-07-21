@@ -14,4 +14,6 @@ public class SubCityOrDivisionLocalizedDto {
     private Long cityId;
     private String name;
     private String description;
+    private Double latitude;
+    private Double longitude;
 }

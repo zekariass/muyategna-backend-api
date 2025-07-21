@@ -14,5 +14,7 @@ public class RegionLocalizedDto {
     private String name;
     private Long countryId;
     private String description;
+    private Double latitude;
+    private Double longitude;
 
 }

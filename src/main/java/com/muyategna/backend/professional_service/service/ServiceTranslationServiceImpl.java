@@ -81,7 +81,20 @@ public class ServiceTranslationServiceImpl implements ServiceTranslationService 
         LanguageDto languageDto = LanguageContextHolder.getLanguage();
         ServiceTranslation translation = serviceTranslationRepository
                 .findByServiceIdAndLanguageId(serviceId, languageDto.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Translation not found for service ID: " + serviceId));
+                .orElse(null);
+
+        if (translation == null) {
+            log.warn("No translation found for service ID: {} in language: {}", serviceId, languageDto.getLocale());
+            // Fallback to global language if no translation found
+            translation = serviceTranslationRepository
+                    .findByServiceIdAndLanguageId(serviceId, languageService.getGlobalLanguage().getId())
+                    .orElse(null);
+            if (translation == null) {
+                log.error("No fallback translation found for service ID: {}", serviceId);
+               throw new ResourceNotFoundException("No translation found for service ID: " + serviceId);
+            }
+        }
+
         log.info("Retrieved translation for service ID: {}", serviceId);
         return translation;
     }

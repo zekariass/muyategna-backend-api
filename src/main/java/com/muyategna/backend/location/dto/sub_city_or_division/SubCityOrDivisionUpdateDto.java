@@ -22,4 +22,10 @@ public class SubCityOrDivisionUpdateDto {
     @NotBlank(message = "Name is required")
     private String name;
     private String description;
+
+    @NotNull(message = "Latitude is required")
+    private Double latitude;
+
+    @NotNull(message = "Longitude is required")
+    private Double longitude;
 }

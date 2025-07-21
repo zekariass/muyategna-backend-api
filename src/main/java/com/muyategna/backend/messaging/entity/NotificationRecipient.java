@@ -32,8 +32,8 @@ public class NotificationRecipient {
     @JoinColumn(name = "notification_id", nullable = false)
     private Notification notification;
 
-    @Column(name = "is_read", nullable = false)
-    private boolean isRead = false;
+//    @Column(name = "is_read", nullable = false)
+//    private boolean isRead = false;
 
     @Column(name = "read_at")
     private LocalDateTime readAt;

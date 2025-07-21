@@ -2,16 +2,19 @@ package com.muyategna.backend.service_provider.service;
 
 import com.muyategna.backend.common.entity.LegalDocument;
 import com.muyategna.backend.common.service.LegalDocumentService;
+import com.muyategna.backend.job_request.exception.ServiceNotSubscribedException;
 import com.muyategna.backend.location.dto.address.AddressCreateDto;
 import com.muyategna.backend.location.entity.Address;
 import com.muyategna.backend.location.mapper.CountryMapper;
 import com.muyategna.backend.location.service.AddressService;
 import com.muyategna.backend.professional_service.service.ServiceService;
+import com.muyategna.backend.redis.CacheConstants;
 import com.muyategna.backend.service_provider.dto.service_provider.ServiceProviderCreateDto;
 import com.muyategna.backend.service_provider.dto.service_provider.ServiceProviderDto;
 import com.muyategna.backend.service_provider.dto.service_provider.ServiceProviderUpdateDto;
 import com.muyategna.backend.service_provider.dto.service_provider_agreement.ServiceProviderAgreementCreateDto;
 import com.muyategna.backend.service_provider.dto.service_provider_service.ServiceProviderServiceCreateDto;
+import com.muyategna.backend.service_provider.dto.service_provider_service.ServiceProviderServiceDto;
 import com.muyategna.backend.service_provider.dto.service_provider_tax_info.ServiceProviderTaxInfoCreateDto;
 import com.muyategna.backend.service_provider.entity.*;
 import com.muyategna.backend.service_provider.mapper.ServiceProviderAgreementMapper;
@@ -19,6 +22,8 @@ import com.muyategna.backend.service_provider.mapper.ServiceProviderMapper;
 import com.muyategna.backend.service_provider.mapper.ServiceProviderServiceMapper;
 import com.muyategna.backend.service_provider.mapper.ServiceProviderTaxInfoMapper;
 import com.muyategna.backend.service_provider.repository.ServiceProviderRepository;
+import com.muyategna.backend.service_provider.repository.ServiceProviderServiceRepository;
+import com.muyategna.backend.service_provider.repository.projection.ServiceProviderServiceWithDistanceProjection;
 import com.muyategna.backend.system.context.CountryContextHolder;
 import com.muyategna.backend.system.exception.ResourceNotFoundException;
 import com.muyategna.backend.user.AuthUtils;
@@ -26,17 +31,18 @@ import com.muyategna.backend.user.entity.UserProfile;
 import com.muyategna.backend.user.repository.UserProfileRepository;
 import jakarta.ws.rs.BadRequestException;
 import lombok.extern.slf4j.Slf4j;
+import org.locationtech.jts.geom.Point;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
 public class ServiceProviderServiceImpl implements ServiceProviderServiceInterface {
 
+    private final ServiceProviderServiceRepository serviceProviderServiceRepository;
     private final ServiceProviderRepository serviceProviderRepository;
     private final ServiceProviderServiceService serviceProviderServiceService;
     private final AddressService addressService;
@@ -49,7 +55,17 @@ public class ServiceProviderServiceImpl implements ServiceProviderServiceInterfa
     private final ServiceProviderRoleService serviceProviderRoleService;
     private final ServiceEmployeeRoleService serviceEmployeeRoleService;
 
-    public ServiceProviderServiceImpl(ServiceProviderRepository serviceProviderRepository, ServiceProviderServiceService serviceProviderServiceService, AddressService addressService, ServiceService serviceService, ServiceProviderTaxInfoService serviceProviderTaxInfoService, LegalDocumentService legalDocumentService, ServiceProviderAgreementService serviceProviderAgreementService, UserProfileRepository userProfileRepository, ServiceEmployeeService serviceEmployeeService, ServiceProviderRoleService serviceProviderRoleService, ServiceEmployeeRoleService serviceEmployeeRoleService) {
+    public ServiceProviderServiceImpl(ServiceProviderServiceRepository serviceProviderServiceRepository, ServiceProviderRepository serviceProviderRepository,
+                                      ServiceProviderServiceService serviceProviderServiceService,
+                                      AddressService addressService, ServiceService serviceService,
+                                      ServiceProviderTaxInfoService serviceProviderTaxInfoService,
+                                      LegalDocumentService legalDocumentService,
+                                      ServiceProviderAgreementService serviceProviderAgreementService,
+                                      UserProfileRepository userProfileRepository,
+                                      ServiceEmployeeService serviceEmployeeService,
+                                      ServiceProviderRoleService serviceProviderRoleService,
+                                      ServiceEmployeeRoleService serviceEmployeeRoleService) {
+        this.serviceProviderServiceRepository = serviceProviderServiceRepository;
         this.serviceProviderRepository = serviceProviderRepository;
         this.serviceProviderServiceService = serviceProviderServiceService;
         this.addressService = addressService;
@@ -235,5 +251,39 @@ public class ServiceProviderServiceImpl implements ServiceProviderServiceInterfa
         }
         log.info("Service Provider inactivated successfully with ID: {}", serviceProviderId);
         return true;
+    }
+
+    @Override
+    public Set<ServiceProviderServiceWithDistanceProjection> getServiceProviderServicesByServiceAndLocation(Long serviceId, Point geoPoint, Double radius) {
+        return serviceProviderServiceRepository.findServiceProviderServicesByServiceAndLocation(serviceId, geoPoint, radius);
+
+    }
+
+    @Override
+    public Set<ServiceProviderServiceWithDistanceProjection> getServiceProviderServicesByServiceAndLocation(Long id, Point geoPoint, double radius, List<Long> excludedServiceProviderIds) {
+        return serviceProviderServiceRepository.findServiceProviderServicesByServiceAndLocation(id, geoPoint, radius, excludedServiceProviderIds);
+    }
+
+    @Override
+    public List<ServiceProviderService> getServiceProviderServicesByProviderIdAndIsActive(Long serviceProviderId, boolean isActive) {
+        log.info("Retrieving Service Provider");
+        List<ServiceProviderService> serviceProviderServices = serviceProviderServiceRepository
+                .findByProviderIdAndIsActive(serviceProviderId, isActive);
+        log.info("Retrieved Service Provider services of size: {}", serviceProviderServices.size());
+        return serviceProviderServices;
+    }
+
+    @Cacheable(value = CacheConstants.CACHE_SERVICE_PROVIDER,
+            key = "T(com.muyategna.backend.redis.ServiceProviderCacheKeyUtil).getServiceProviderServiceKey(#serviceProviderId, #serviceId)")
+    @Override
+    public ServiceProviderServiceDto getServiceProviderServiceByProviderIdAndServiceId(Long serviceProviderId, Long serviceId) {
+        log.info("Checking if Service Provider with ID: {} has subscribed to Service with ID: {}", serviceProviderId, serviceId);
+        ServiceProviderServiceDto serviceProviderService = serviceProviderServiceRepository
+                .getServiceProviderServiceByProviderIdAndServiceIdAndIsActiveTrue(serviceProviderId, serviceId)
+                .map(ServiceProviderServiceMapper::toDto)
+                .orElseThrow(() -> new ServiceNotSubscribedException("Service Provider does not have the service with ID: " + serviceId));
+
+        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Service Provider Service: " + serviceProviderService);
+        return serviceProviderService;
     }
 }

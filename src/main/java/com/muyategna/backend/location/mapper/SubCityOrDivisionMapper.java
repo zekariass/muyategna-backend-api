@@ -5,24 +5,13 @@ import com.muyategna.backend.location.dto.country.CountryDto;
 import com.muyategna.backend.location.dto.region.RegionDto;
 import com.muyategna.backend.location.dto.sub_city_or_division.*;
 import com.muyategna.backend.location.entity.SubCityOrDivision;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Component;
 
 @Component
 public final class SubCityOrDivisionMapper {
-
-//    public static SubCityOrDivisionDto toDto(SubCityOrDivision subCityOrDivision, SubCityOrDivisionView translation) {
-//        if (subCityOrDivision == null || translation == null) {
-//            return null;
-//        }
-//        SubCityOrDivisionDto dto = new SubCityOrDivisionDto();
-//        dto.setId(subCityOrDivision.getId());
-//        dto.setName(translation.getName());
-//        dto.setParentCityName(subCityOrDivision.getCity().getName());
-//        dto.setDescription(translation.getDescription());
-//        return dto;
-//    }
-
-
     /**
      * Converts a {@link SubCityOrDivision} entity to a {@link SubCityOrDivisionDto}.
      *
@@ -42,6 +31,10 @@ public final class SubCityOrDivisionMapper {
         dto.setDescription(subCityOrDivision.getDescription());
         dto.setCreatedAt(subCityOrDivision.getCreatedAt());
         dto.setUpdatedAt(subCityOrDivision.getUpdatedAt());
+        if (subCityOrDivision.getGeoPoint() != null) {
+            dto.setLatitude(subCityOrDivision.getGeoPoint().getY());
+            dto.setLongitude(subCityOrDivision.getGeoPoint().getX());
+        }
         return dto;
     }
 
@@ -62,6 +55,10 @@ public final class SubCityOrDivisionMapper {
         dto.setCityId(subCityOrDivision.getCity().getId());
         dto.setName(subCityOrDivision.getName());
         dto.setDescription(subCityOrDivision.getDescription());
+        if (subCityOrDivision.getGeoPoint() != null) {
+            dto.setLatitude(subCityOrDivision.getGeoPoint().getY());
+            dto.setLongitude(subCityOrDivision.getGeoPoint().getX());
+        }
         return dto;
     }
 
@@ -83,6 +80,10 @@ public final class SubCityOrDivisionMapper {
         dto.setCityId(subCityOrDivision.getCity().getId());
         dto.setName(subCityOrDivision.getName());
         dto.setDescription(subCityOrDivision.getDescription());
+        if (subCityOrDivision.getGeoPoint() != null) {
+            dto.setLatitude(subCityOrDivision.getGeoPoint().getY());
+            dto.setLongitude(subCityOrDivision.getGeoPoint().getX());
+        }
         return dto;
     }
 
@@ -125,6 +126,9 @@ public final class SubCityOrDivisionMapper {
         subCityOrDivision.setCity(CityMapper.toEntity(cityDto, regionDto, countryDto));
         subCityOrDivision.setName(dto.getName());
         subCityOrDivision.setDescription(dto.getDescription());
+        if (dto.getLatitude() != null && dto.getLongitude() != null) {
+            subCityOrDivision.setGeoPoint(createPoint(dto.getLatitude(), dto.getLongitude()));
+        }
         return subCityOrDivision;
     }
 
@@ -146,6 +150,9 @@ public final class SubCityOrDivisionMapper {
         subCityOrDivision.setName(dto.getName());
         subCityOrDivision.setDescription(dto.getDescription());
         subCityOrDivision.setCity(CityMapper.toEntity(cityDto, regionDto, countryDto));
+        if (dto.getLatitude() != null && dto.getLongitude() != null) {
+            subCityOrDivision.setGeoPoint(createPoint(dto.getLatitude(), dto.getLongitude()));
+        }
         return subCityOrDivision;
     }
 
@@ -189,6 +196,9 @@ public final class SubCityOrDivisionMapper {
         subCityOrDivision.setDescription(dto.getDescription());
         subCityOrDivision.setCreatedAt(dto.getCreatedAt());
         subCityOrDivision.setUpdatedAt(dto.getUpdatedAt());
+        if (dto.getLatitude() != null && dto.getLongitude() != null) {
+            subCityOrDivision.setGeoPoint(createPoint(dto.getLatitude(), dto.getLongitude()));
+        }
         return subCityOrDivision;
     }
 
@@ -202,6 +212,10 @@ public final class SubCityOrDivisionMapper {
             dto.setCityId(subCityOrDivision.getCity().getId());
             dto.setName(subCityOrDivision.getName());
             dto.setDescription(subCityOrDivision.getDescription());
+            if (subCityOrDivision.getGeoPoint() != null) {
+                dto.setLatitude(subCityOrDivision.getGeoPoint().getY());
+                dto.setLongitude(subCityOrDivision.getGeoPoint().getX());
+            }
             return dto;
         }
 
@@ -209,8 +223,15 @@ public final class SubCityOrDivisionMapper {
         dto.setCityId(subCityOrDivision.getCity().getId());
         dto.setName(translation.getName());
         dto.setDescription(translation.getDescription());
+        if (subCityOrDivision.getGeoPoint() != null) {
+            dto.setLatitude(subCityOrDivision.getGeoPoint().getY());
+            dto.setLongitude(subCityOrDivision.getGeoPoint().getX());
+        }
         return dto;
+    }
 
-
+    private static Point createPoint(Double latitude, Double longitude) {
+        GeometryFactory geometryFactory = new GeometryFactory();
+        return geometryFactory.createPoint(new Coordinate(longitude, latitude));
     }
 }

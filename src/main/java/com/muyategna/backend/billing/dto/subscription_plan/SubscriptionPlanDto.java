@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -22,11 +23,15 @@ public class SubscriptionPlanDto {
     private BillingCycleEnum billingCycle;
     private Integer billingCycleCount;
     private Integer trialPeriodDays;
-    private Integer creditsIncluded;
     private Integer sortOrder;
+//    private Integer leadsIncluded = 0;
+    private BigDecimal creditsIncluded;
+
+    private Boolean upgradeable = true;
+    private Boolean downgradeable = true;
+    private Map<String, Object> extraData;
     private Boolean isDefault;
     private Boolean isActive;
-    private String slug;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

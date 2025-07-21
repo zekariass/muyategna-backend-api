@@ -1,10 +1,14 @@
 package com.muyategna.backend.location.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.locationtech.jts.geom.Point;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -50,6 +54,7 @@ public class Country {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "country", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Region> regions;
 
@@ -61,6 +66,10 @@ public class Country {
     private String currency;
 
     private String taxpayerIdType;
+
+    @Column(name = "geo_point")
+    @JdbcTypeCode(SqlTypes.GEOGRAPHY)
+    private Point geoPoint;
 
     @CreatedDate
     @Column(name = "created_at")

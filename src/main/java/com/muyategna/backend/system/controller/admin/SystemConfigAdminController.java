@@ -65,7 +65,7 @@ public class SystemConfigAdminController {
 
         Pageable pageable = adminPaginationService.getPagination(page, size, sortBy, SystemConfig.class);
 
-        Page<SystemConfigDto> systemConfigDtoList = systemConfigService.getAllSystemConfigs(pageable);
+        Page<SystemConfigDto> systemConfigDtoList = systemConfigService.getAllSystemConfigsFromDB(pageable);
         PagedModel<EntityModel<SystemConfigDto>> pagedModel = pagedResourcesAssembler.toModel(
                 systemConfigDtoList,
                 dto -> systemConfigDtoAssembler.toModel(
@@ -100,7 +100,7 @@ public class SystemConfigAdminController {
     @Operation(summary = "Get a system configuration by ID", description = "Returns a system configuration by its ID")
     public ResponseEntity<ApiResponse<EntityModel<SystemConfigDto>>> getSystemConfigById(@Parameter(description = "ID of the system configuration") @RequestParam Long systemConfigId,
                                                                                          HttpServletRequest request) {
-        SystemConfigDto systemConfigDto = systemConfigService.getSystemConfigById(systemConfigId);
+        SystemConfigDto systemConfigDto = systemConfigService.getSystemConfigByIdFromDB(systemConfigId);
         EntityModel<SystemConfigDto> entityModel = systemConfigDtoAssembler.toModel(systemConfigDto, request);
         ApiResponse<EntityModel<SystemConfigDto>> response = ApiResponse.<EntityModel<SystemConfigDto>>builder()
                 .statusCode(HttpStatus.OK.value())
@@ -125,7 +125,7 @@ public class SystemConfigAdminController {
     @Operation(summary = "Get a system configuration by name", description = "Returns a system configuration by its name")
     public ResponseEntity<ApiResponse<EntityModel<SystemConfigDto>>> getSystemConfigByName(@Parameter(description = "Name of the system configuration") @RequestParam String name,
                                                                                            HttpServletRequest request) {
-        SystemConfigDto systemConfigDto = systemConfigService.getSystemConfigByName(name);
+        SystemConfigDto systemConfigDto = systemConfigService.getSystemConfigByNameFromDB(name);
         EntityModel<SystemConfigDto> entityModel = systemConfigDtoAssembler.toModel(systemConfigDto, request);
         ApiResponse<EntityModel<SystemConfigDto>> response = ApiResponse.<EntityModel<SystemConfigDto>>builder()
                 .statusCode(HttpStatus.OK.value())

@@ -2,11 +2,13 @@ package com.muyategna.backend.billing.entity;
 
 import com.muyategna.backend.billing.enums.DiscountUserType;
 import com.muyategna.backend.location.entity.Country;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -14,6 +16,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -71,6 +74,10 @@ public class DiscountPlan {
     @Enumerated(EnumType.STRING)
     @Column(name = "applies_to", nullable = false)
     private DiscountUserType appliesTo;
+
+    @Type(JsonBinaryType.class)
+    @Column(name = "extra_data", columnDefinition = "jsonb")
+    private Map<String, Object> extraData;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

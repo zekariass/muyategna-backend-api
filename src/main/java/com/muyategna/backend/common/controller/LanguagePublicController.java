@@ -37,7 +37,7 @@ public class LanguagePublicController {
     @Operation(summary = "Get all languages for current country", description = "Get all languages for current country")
     public ResponseEntity<ApiResponse<List<LanguageDto>>> getAllLanguagesByCountry(HttpServletRequest request) {
         CountryDto countryDto = CountryContextHolder.getCountry();
-        List<LanguageDto> languages = languageService.getAllLanguagesByCountryPublic(countryDto).stream().toList();
+        List<LanguageDto> languages = languageService.getAllLanguagesByCountryPublic(countryDto.getId()).stream().toList();
 
         ApiResponse<List<LanguageDto>> response = ApiResponse.<List<LanguageDto>>builder()
                 .statusCode(HttpStatus.OK.value())

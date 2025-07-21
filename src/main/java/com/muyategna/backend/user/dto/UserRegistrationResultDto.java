@@ -1,7 +1,6 @@
 package com.muyategna.backend.user.dto;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
@@ -10,10 +9,14 @@ import java.util.Map;
  * DTO for user registration response.
  * This class is used to transfer user registration response data between the client and server.
  */
-@Data
+@Setter
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class UserRegistrationResultDto {
-    private String userId;
+    private String keycloakUserId;
+    private UserProfileDto userProfile;
     private String username;
     private String email;
     private boolean emailVerified;

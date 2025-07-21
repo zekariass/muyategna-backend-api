@@ -1,12 +1,17 @@
 package com.muyategna.backend.job_request.mapper;
 
-import com.muyategna.backend.job_request.dto.job_request.JobRequestCreateDto;
-import com.muyategna.backend.job_request.dto.job_request.JobRequestDto;
-import com.muyategna.backend.job_request.dto.job_request.JobRequestMinimalDto;
-import com.muyategna.backend.job_request.dto.job_request.JobRequestUpdateDto;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.muyategna.backend.job_request.dto.job_request.*;
 import com.muyategna.backend.job_request.entity.JobRequest;
+import com.muyategna.backend.job_request.entity.JobStartTimeWindow;
+import com.muyategna.backend.job_request.enums.JobStatus;
+import com.muyategna.backend.location.dto.address.AddressCreateDto;
 import com.muyategna.backend.location.entity.Address;
+import com.muyategna.backend.location.mapper.AddressMapper;
 import com.muyategna.backend.professional_service.entity.Service;
+import com.muyategna.backend.professional_service.entity.ServiceTranslation;
+import com.muyategna.backend.professional_service.mapper.ServiceMapper;
 import com.muyategna.backend.user.entity.UserProfile;
 
 import java.util.List;
@@ -23,7 +28,7 @@ public final class JobRequestMapper {
                 .customerId(entity.getCustomer().getId())
                 .description(entity.getDescription())
                 .budget(entity.getBudget())
-                .whenToStartJob(entity.getWhenToStartJob())
+                .startTimeWindow(JobStartTimeWindowMapper.toDto(entity.getStartTimeWindow()))
                 .status(entity.getStatus())
                 .addressId(entity.getAddress().getId())
                 .createdAt(entity.getCreatedAt())
@@ -42,11 +47,116 @@ public final class JobRequestMapper {
                 .customerId(entity.getCustomer().getId())
                 .description(entity.getDescription())
                 .budget(entity.getBudget())
-                .whenToStartJob(entity.getWhenToStartJob())
+                .startTimeWindow(JobStartTimeWindowMapper.toDto(entity.getStartTimeWindow()))
                 .status(entity.getStatus())
                 .addressId(entity.getAddress().getId())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+
+    public static JobRequestCreateDto toCreateDto(JobRequestByNewUserWithJsonStringCreateDto jsonStringDto) {
+        if (jsonStringDto == null) {
+            return null;
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Deserialize the JSON strings
+        AddressCreateDto addressCreateDto;
+//        List<JobQuestionAnswerCreateDto> answers;
+
+        try {
+            addressCreateDto = objectMapper.readValue(jsonStringDto.getAddress(), AddressCreateDto.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Invalid address JSON", e);
+        }
+        return JobRequestCreateDto.builder()
+                .serviceId(jsonStringDto.getServiceId())
+                .description(jsonStringDto.getDescription())
+                .budget(jsonStringDto.getBudget())
+                .startTimeWindowId(jsonStringDto.getStartTimeWindowId())
+                .status(JobStatus.OPEN)
+                .addressCreateDto(addressCreateDto)
+                .questionAnswers(jsonStringDto.parseAndGetQuestionAnswers())
+                .extraData(jsonStringDto.parseAndGetExtraData())
+                .build();
+    }
+
+    public static JobRequestCreateDto toCreateDto(
+            JobRequestByExistingUserWithJsonStringCreateDto jsonStringDto,
+            UserProfile customer) {
+        if (jsonStringDto == null) {
+            return null;
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Deserialize the JSON strings
+        AddressCreateDto addressCreateDto;
+//        List<JobQuestionAnswerCreateDto> answers;
+
+        try {
+            addressCreateDto = objectMapper.readValue(jsonStringDto.getAddress(), AddressCreateDto.class);
+//            answers = objectMapper.readValue(
+//                    jsonStringDto.getAnswers(),
+//                    new TypeReference<List<JobQuestionAnswerCreateDto>>() {}
+//            );
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Invalid address JSON", e);
+        }
+
+        return JobRequestCreateDto.builder()
+                .serviceId(jsonStringDto.getServiceId())
+                .description(jsonStringDto.getDescription())
+                .budget(jsonStringDto.getBudget())
+                .startTimeWindowId(jsonStringDto.getStartTimeWindowId())
+                .status(JobStatus.OPEN)
+                .addressCreateDto(addressCreateDto)
+                .questionAnswers(jsonStringDto.parseAndGetQuestionAnswers())
+                .extraData(jsonStringDto.parseAndGetExtraData())
+                .customerId(customer.getId())
+                .build();
+    }
+
+
+    public static JobRequestListDto toListDto(JobRequest entity,
+                                              ServiceTranslation serviceTranslation,
+                                              JobStartTimeWindow startTimeWindow) {
+        if (entity == null) {
+            return null;
+        }
+        return JobRequestListDto.builder()
+                .id(entity.getId())
+                .service(ServiceMapper.toMinimalLocalizedDto(entity.getService(), serviceTranslation))
+                .description(entity.getDescription())
+                .budget(entity.getBudget())
+                .startTimeWindow(JobStartTimeWindowMapper.toDto(entity.getStartTimeWindow()))
+                .status(entity.getStatus())
+                .address(AddressMapper.toFlatDto(entity.getAddress()))
+                .build();
+    }
+
+
+    public static JobRequestDetailDto toDetailDto(JobRequest entity,
+                                                  ServiceTranslation serviceTranslation) {
+        if (entity == null) {
+            return null;
+        }
+        return JobRequestDetailDto.builder()
+                .id(entity.getId())
+                .localizedService(ServiceMapper.toMinimalLocalizedDto(entity.getService(), serviceTranslation))
+                .customerId(entity.getCustomer().getId())
+                .description(entity.getDescription())
+                .budget(entity.getBudget())
+                .startTimeWindow(JobStartTimeWindowMapper.toDto(entity.getStartTimeWindow()))
+                .status(entity.getStatus())
+                .address(AddressMapper.toFlatDto(entity.getAddress()))
+                .questionAnswers(entity.getQuestionAnswers())
+                .extraData(entity.getExtraData())
+                .mediaList(JobRequestMediaMapper.toMinimalDtoList(entity.getMediaList()))
+                .createdAt(entity.getCreatedAt())
                 .build();
     }
 
@@ -64,10 +174,12 @@ public final class JobRequestMapper {
         entity.setCustomer(customer);
         entity.setDescription(dto.getDescription());
         entity.setBudget(dto.getBudget());
-        entity.setWhenToStartJob(dto.getWhenToStartJob());
+        entity.setStartTimeWindow(JobStartTimeWindowMapper.toEntity(dto.getStartTimeWindow()));
         entity.setStatus(dto.getStatus());
         entity.setAddress(address);
         entity.setCreatedAt(dto.getCreatedAt());
+        entity.setQuestionAnswers(dto.getQuestionAnswers());
+        entity.setExtraData(dto.getExtraData());
         return entity;
     }
 
@@ -75,7 +187,8 @@ public final class JobRequestMapper {
     public static JobRequest toEntity(JobRequestCreateDto dto,
                                       Service service,
                                       UserProfile customer,
-                                      Address address) {
+                                      Address address,
+                                      JobStartTimeWindow startTimeWindow) {
         if (dto == null) {
             return null;
         }
@@ -84,30 +197,37 @@ public final class JobRequestMapper {
         entity.setCustomer(customer);
         entity.setDescription(dto.getDescription());
         entity.setBudget(dto.getBudget());
-        entity.setWhenToStartJob(dto.getWhenToStartJob());
+        entity.setStartTimeWindow(startTimeWindow);
         entity.setStatus(dto.getStatus());
         entity.setAddress(address);
+        entity.setQuestionAnswers(dto.getQuestionAnswers());
+        entity.setExtraData(dto.getExtraData());
         return entity;
     }
 
-    public static JobRequest toEntity(JobRequestUpdateDto dto,
-                                      Service service,
-                                      UserProfile customer,
-                                      Address address) {
-        if (dto == null) {
+
+    public static JobRequest toEntity(JobRequest entity, JobRequestUpdateDto jsonStringDto) {
+        if (jsonStringDto == null) {
             return null;
         }
-        JobRequest entity = new JobRequest();
-        entity.setId(dto.getId());
+
+        Service service = new Service();
+        service.setId(jsonStringDto.getServiceId());
+
+        JobStartTimeWindow startTimeWindow = new JobStartTimeWindow();
+        startTimeWindow.setId(jsonStringDto.getStartTimeWindowId());
+
+        entity.setId(jsonStringDto.getId());
         entity.setService(service);
-        entity.setCustomer(customer);
-        entity.setDescription(dto.getDescription());
-        entity.setBudget(dto.getBudget());
-        entity.setWhenToStartJob(dto.getWhenToStartJob());
-        entity.setStatus(dto.getStatus());
-        entity.setAddress(address);
+        entity.setDescription(jsonStringDto.getDescription());
+        entity.setBudget(jsonStringDto.getBudget());
+        entity.setStartTimeWindow(startTimeWindow);
+        entity.setQuestionAnswers(jsonStringDto.getQuestionAnswers());
+        entity.setExtraData(jsonStringDto.getExtraData());
+
         return entity;
     }
+
 
     public static List<JobRequestMinimalDto> toMinimalDtoList(List<JobRequest> jobRequests) {
         return jobRequests.stream().map(JobRequestMapper::toMinimalDto).toList();

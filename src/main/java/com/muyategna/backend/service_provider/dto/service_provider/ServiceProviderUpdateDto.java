@@ -43,4 +43,16 @@ public class ServiceProviderUpdateDto {
     private Integer yearsOfExperience;
     private Boolean isActive;
 
+    @NotBlank(message = "Business address is required")
+    private String businessEmail ;
+
+    @NotBlank(message = "Business phone is required")
+    private String businessPhone;
+    private String tiktok;
+    private String whatsApp;
+    private String facebook;
+    private String linkedin;
+    private String instagram;
+    private String website;
+
 }

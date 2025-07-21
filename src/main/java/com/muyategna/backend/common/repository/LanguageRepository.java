@@ -12,7 +12,7 @@ public interface LanguageRepository extends JpaRepository<Language, Long> {
 
     Optional<Language> findByLocale(String locale);
 
-    List<Language> findByCountry(Country country);
+//    List<Language> findByCountryId(Long countryId);
 
     Optional<Language> findByIsGlobal(boolean b);
 

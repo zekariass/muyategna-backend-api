@@ -18,4 +18,6 @@ public class CityDto {
     private String description;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Double latitude;
+    private Double longitude;
 }

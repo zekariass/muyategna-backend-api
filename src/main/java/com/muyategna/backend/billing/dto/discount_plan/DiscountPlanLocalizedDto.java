@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -24,6 +25,7 @@ public class DiscountPlanLocalizedDto {
     private CouponDto coupon;
     private Boolean couponRequired;
     private DiscountUserType appliesTo;
+    private Map<String, Object> extraData;
 
 }
 

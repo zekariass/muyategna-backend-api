@@ -51,8 +51,11 @@ public class Address {
 
     // Use Hibernate Spatial to map geography point
     @Column(name = "geo_point")
-    @JdbcTypeCode(SqlTypes.GEOMETRY)
+    @JdbcTypeCode(SqlTypes.GEOGRAPHY)
     private Point geoPoint;
+
+    @Column(name = "is_default_geo_point")
+    private Boolean isDefaultGeoPoint = true;
 
     private String fullAddress;
 

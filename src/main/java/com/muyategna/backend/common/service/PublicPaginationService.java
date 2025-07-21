@@ -78,6 +78,10 @@ public class PublicPaginationService {
      * @return A safe sort by field.
      */
     public String getSafeSortBy(String sortBy, Class<?> clazz) {
+        String[] sortByArray = Arrays.stream(sortBy.split(","))
+                .map(String::trim)
+                .toArray(String[]::new);
+        sortBy = sortByArray[0];
         if (CommonUtil.isSortFieldInvalid(clazz, sortBy)) {
             sortBy = "id";
         }

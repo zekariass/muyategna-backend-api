@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -39,11 +41,13 @@ public class PaymentIntent {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     private ProductTypeEnum productType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentIntentStatusEnum status;
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    private PaymentIntentStatusEnum status; // Create quartz job to remind about payment intents
 
     @Column(nullable = false)
     private LocalDateTime paymentDueAt;

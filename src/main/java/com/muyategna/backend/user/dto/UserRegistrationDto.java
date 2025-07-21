@@ -1,16 +1,17 @@
 package com.muyategna.backend.user.dto;
 
-import com.muyategna.backend.location.entity.Address;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 /**
  * DTO for user registration request.
  * This class is used to transfer user registration data between the client and server.
  */
-@Data
+@Setter
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class UserRegistrationDto {
 
@@ -33,13 +34,4 @@ public class UserRegistrationDto {
 
     @Email(message = "Invalid email address")
     private String email;
-
-    private String profilePictureUrl;
-
-    private String referralCode;
-
-    private Boolean isStaff = false;
-
-    private Address address;
-//    private List<String> roles; // List of role names
 }

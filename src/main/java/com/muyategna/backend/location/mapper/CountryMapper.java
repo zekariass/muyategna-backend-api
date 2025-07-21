@@ -2,6 +2,9 @@ package com.muyategna.backend.location.mapper;
 
 import com.muyategna.backend.location.dto.country.*;
 import com.muyategna.backend.location.entity.Country;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
 
 public final class CountryMapper {
 
@@ -19,6 +22,8 @@ public final class CountryMapper {
         dto.setCountryIsoCodeNumeric(countryDto.getCountryIsoCodeNumeric());
         dto.setCurrency(countryDto.getCurrency());
         dto.setTaxpayerIdType(countryDto.getTaxpayerIdType());
+        dto.setLongitude(countryDto.getLongitude());
+        dto.setLatitude(countryDto.getLatitude());
         return dto;
     }
 
@@ -106,7 +111,13 @@ public final class CountryMapper {
         dto.setCreatedAt(country.getCreatedAt());
         dto.setUpdatedAt(country.getUpdatedAt());
         dto.setCurrency(country.getCurrency());
+        dto.setGlobal(country.isGlobal());
         dto.setTaxpayerIdType(country.getTaxpayerIdType());
+        if (country.getGeoPoint() != null) {
+            Point location = country.getGeoPoint();
+            dto.setLatitude(location.getY());
+            dto.setLongitude(location.getX());
+        }
         return dto;
     }
 
@@ -133,6 +144,9 @@ public final class CountryMapper {
         country.setCurrency(countryDto.getCurrency());
         country.setTaxpayerIdType(countryDto.getTaxpayerIdType());
         country.setCreatedAt(countryDto.getCreatedAt());
+        if (countryDto.getLatitude() != null && countryDto.getLongitude() != null) {
+            country.setGeoPoint(createPoint(countryDto.getLatitude(), countryDto.getLongitude()));
+        }
         return country;
     }
 
@@ -158,6 +172,9 @@ public final class CountryMapper {
         country.setGlobal(countryCreateDto.isGlobal());
         country.setCurrency(countryCreateDto.getCurrency());
         country.setTaxpayerIdType(countryCreateDto.getTaxpayerIdType());
+        if (countryCreateDto.getLatitude() != null && countryCreateDto.getLongitude() != null) {
+            country.setGeoPoint(createPoint(countryCreateDto.getLatitude(), countryCreateDto.getLongitude()));
+        }
         return country;
     }
 
@@ -184,6 +201,9 @@ public final class CountryMapper {
         country.setGlobal(countryUpdateDto.isGlobal());
         country.setCurrency(countryUpdateDto.getCurrency());
         country.setTaxpayerIdType(countryUpdateDto.getTaxpayerIdType());
+        if (countryUpdateDto.getLatitude() != null && countryUpdateDto.getLongitude() != null) {
+            country.setGeoPoint(createPoint(countryUpdateDto.getLatitude(), countryUpdateDto.getLongitude()));
+        }
         return country;
     }
 
@@ -203,5 +223,10 @@ public final class CountryMapper {
         country.setId(countryMinimalDto.getId());
         country.setName(countryMinimalDto.getName());
         return country;
+    }
+
+    private static Point createPoint(Double latitude, Double longitude) {
+        GeometryFactory geometryFactory = new GeometryFactory();
+        return geometryFactory.createPoint(new Coordinate(longitude, latitude));
     }
 }

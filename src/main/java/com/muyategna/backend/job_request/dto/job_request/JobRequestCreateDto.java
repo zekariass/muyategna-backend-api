@@ -1,8 +1,6 @@
 package com.muyategna.backend.job_request.dto.job_request;
 
-import com.muyategna.backend.job_request.dto.job_question_answer.JobQuestionAnswerCreateDto;
 import com.muyategna.backend.job_request.enums.JobStatus;
-import com.muyategna.backend.job_request.enums.WhenToStartJob;
 import com.muyategna.backend.location.dto.address.AddressCreateDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,9 +8,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
@@ -30,15 +30,20 @@ public class JobRequestCreateDto {
 
     private BigDecimal budget;
 
-    @NotNull(message = "When to start is required")
-    private WhenToStartJob whenToStartJob;
+    @NotNull(message = "Start Time Window is required")
+    private Long startTimeWindowId;
 
     @NotNull(message = "Status is required")
     private JobStatus status;
 
-    @NotNull(message = "Address ID is required")
+    @NotNull(message = "Address is required")
     private AddressCreateDto addressCreateDto;
 
-    private List<JobQuestionAnswerCreateDto> answers;
+//    private List<JobQuestionAnswerCreateDto> answerCreateDtoList;
+    private List<Map<String, Object>> questionAnswers;
+
+    private Map<String, Object> extraData;
+
+    private List<MultipartFile> files;
 
 }

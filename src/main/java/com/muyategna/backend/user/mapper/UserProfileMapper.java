@@ -1,5 +1,6 @@
 package com.muyategna.backend.user.mapper;
 
+import com.muyategna.backend.location.entity.Country;
 import com.muyategna.backend.user.dto.UserProfileDto;
 import com.muyategna.backend.user.entity.UserProfile;
 
@@ -18,19 +19,18 @@ public final class UserProfileMapper {
         userProfileDto.setProfilePictureUrl(userProfile.getProfilePictureUrl());
         userProfileDto.setLastLogin(userProfile.getLastLogin());
         userProfileDto.setReferralCode(userProfile.getReferralCode());
-        if (userProfile.getAddress() != null) {
-            userProfileDto.setAddressId(userProfile.getAddress().getId());
-            userProfileDto.setFullAddress(userProfile.getAddress().getFullAddress());
-        }
+        userProfileDto.setCountryId(userProfile.getCountry().getId());
         userProfileDto.setDefaultLanguageId(userProfile.getDefaultLanguage().getId());
         return userProfileDto;
     }
 
 
-    public static UserProfile toEntity(UserProfileDto userProfileDto) {
+    public static UserProfile toEntity(UserProfileDto userProfileDto,
+                                       Country country) {
         if (userProfileDto == null) return null;
         UserProfile userProfile = new UserProfile();
         userProfile.setId(userProfileDto.getId());
+        userProfile.setCountry(country);
         userProfile.setKeycloakUserId(userProfileDto.getKeycloakUserId());
         userProfile.setFirstName(userProfileDto.getFirstName());
         userProfile.setMiddleName(userProfileDto.getMiddleName());
