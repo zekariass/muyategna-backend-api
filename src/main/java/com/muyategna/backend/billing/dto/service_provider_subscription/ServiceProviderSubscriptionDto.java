@@ -24,7 +24,7 @@ public class ServiceProviderSubscriptionDto {
     private Map<String, Object> extraData;
     private Boolean isActive;
     private BigDecimal initialCredits;
-    private BigDecimal usedCredits;
+    private BigDecimal balance;
     private Boolean autoRenew;
     private LocalDateTime lastBillingDate;
     private LocalDateTime nextBillingDate;

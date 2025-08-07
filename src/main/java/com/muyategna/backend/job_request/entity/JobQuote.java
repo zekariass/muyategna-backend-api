@@ -1,8 +1,12 @@
 package com.muyategna.backend.job_request.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.muyategna.backend.job_request.enums.JobQuoteStatus;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcType;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.springframework.data.annotation.CreatedDate;
@@ -25,8 +29,8 @@ public class JobQuote {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "claim_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "claim_id", nullable = false)
     private JobLeadClaim claim;
 
     @Column(name = "proposed_price", precision = 15, scale = 2)
@@ -53,6 +57,32 @@ public class JobQuote {
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+
+    @Transient
+    @JsonIgnore
+    public boolean isAccepted() {
+        return status == JobQuoteStatus.ACCEPTED;
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean isRejected() {
+        return status == JobQuoteStatus.REJECTED;
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean isWithdrawn() {
+        return status == JobQuoteStatus.WITHDRAWN;
+    }
+
+
+    @Transient
+    @JsonIgnore
+    public boolean isPending() {
+        return status == JobQuoteStatus.PENDING;
+    }
 }
 
 

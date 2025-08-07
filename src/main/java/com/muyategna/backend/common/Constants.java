@@ -64,6 +64,23 @@ public final class Constants {
     public static final String JOB_LEAD_ASSIGNMENT_QUEUE_BASE_NAME = "job.lead.assignment";
     public static final String JOB_LEAD_REASSIGNMENT_QUEUE_BASE_NAME = "job.lead.reassignment";
     public static final String JOB_LEAD_REMINDER_QUEUE_BASE_NAME = "job.lead.reminder";
+    public static final String SERVICE_PROVIDERS_RANKING_QUEUE_BASE_NAME = "service.providers.ranking";
+
+    // Notification Queues
+    public static final String NOTIFY_NEAR_BY_SERVICE_PROVIDERS_QUEUE_BASE_NAME = "notify.top.n.providers";
+    public static final String NOTIFY_CUSTOMER_ABOUT_NEW_JOB_REQUEST_QUEUE_BASE_NAME = "notify.customer.about.new.job.request";
+    public static final String NOTIFY_SP_ABOUT_NEW_CLAIM_QUEUE_BASE_NAME = "notify.sp.about.new.claim";
+    public static final String NOTIFY_CUSTOMER_ABOUT_NEW_CLAIM_QUEUE_BASE_NAME = "notify.customer.about.new.claim";
+    public static final String NOTIFY_CUSTOMER_ABOUT_JOB_STATUS_CHANGE_QUEUE_BASE_NAME = "notify.customer.about.job.status.change";
+    public static final String NOTIFY_SP_ABOUT_JOB_STATUS_CHANGE_QUEUE_BASE_NAME = "notify.sp.about.job.status.change";
+    public static final String NOTIFY_CUSTOMER_ABOUT_REQUOTE_REQUEST_QUEUE_BASE_NAME = "notify.customer.about.requote.request";
+    public static final String NOTIFY_SP_ABOUT_REQUOTE_REQUEST_QUEUE_BASE_NAME = "notify.sp.about.requote.request";
+    public static final String NOTIFY_CUSTOMER_ABOUT_NEW_QUOTE_QUEUE_BASE_NAME = "notify.customer.about.new.quote";
+    public static final String NOTIFY_SP_ABOUT_NEW_QUOTE_QUEUE_BASE_NAME = "notify.customer.about.new.quote";
+    public static final String NOTIFY_CUSTOMER_ABOUT_QUOTE_STATUS_CHANGE_QUEUE_BASE_NAME = "notify.customer.about.quote.status.change";
+    public static final String NOTIFY_SP_ABOUT_QUOTE_STATUS_CHANGE_QUEUE_BASE_NAME = "notify.sp.about.quote.status.change";
+    public static final String NOTIFY_CUSTOMER_ABOUT_CLAIM_STATUS_CHANGE_QUEUE_BASE_NAME = "notify.customer.about.claim.status.change";
+    public static final String NOTIFY_SP_ABOUT_CLAIM_STATUS_CHANGE_QUEUE_BASE_NAME = "notify.sp.about.claim.status.change";
 
     // Service Provider Queues
     public static final String SP_RANKING_FOR_NEW_LEAD_ASSIGNMENT_QUEUE_BASE_NAME = "service.provider.ranking.for.new.lead.assignment";

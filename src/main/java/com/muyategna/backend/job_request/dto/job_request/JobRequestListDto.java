@@ -1,5 +1,6 @@
 package com.muyategna.backend.job_request.dto.job_request;
 
+import com.muyategna.backend.common.enums.ServiceDeliveryMode;
 import com.muyategna.backend.job_request.dto.job_start_time_window.JobStartTimeWindowDto;
 import com.muyategna.backend.job_request.enums.JobStatus;
 import com.muyategna.backend.location.dto.address.AddressFlatDto;
@@ -23,4 +24,5 @@ public class JobRequestListDto {
     private JobStartTimeWindowDto startTimeWindow;
     private JobStatus status;
     private AddressFlatDto address;
+    private ServiceDeliveryMode deliveryMode;
 }

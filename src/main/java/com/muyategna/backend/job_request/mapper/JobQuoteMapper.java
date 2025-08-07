@@ -2,6 +2,7 @@ package com.muyategna.backend.job_request.mapper;
 
 import com.muyategna.backend.job_request.dto.job_quote.JobQuoteCreateDto;
 import com.muyategna.backend.job_request.dto.job_quote.JobQuoteDto;
+import com.muyategna.backend.job_request.dto.job_quote.JobQuoteMinimalDto;
 import com.muyategna.backend.job_request.dto.job_quote.JobQuoteUpdateDto;
 import com.muyategna.backend.job_request.entity.JobLeadClaim;
 import com.muyategna.backend.job_request.entity.JobQuote;
@@ -20,6 +21,18 @@ public final class JobQuoteMapper {
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+    public static JobQuoteMinimalDto toMinimalDto(JobQuote entity) {
+        return JobQuoteMinimalDto.builder()
+                .id(entity.getId())
+                .claimId(entity.getClaim().getId())
+                .proposedPrice(entity.getProposedPrice())
+                .proposedStartDate(entity.getProposedStartDate())
+                .message(entity.getMessage())
+                .status(entity.getStatus())
+                .createdAt(entity.getCreatedAt())
                 .build();
     }
 
@@ -44,5 +57,9 @@ public final class JobQuoteMapper {
 
     public static List<JobQuoteDto> toDtoList(List<JobQuote> entities) {
         return entities.stream().map(JobQuoteMapper::toDto).toList();
+    }
+
+    public static List<JobQuoteMinimalDto> toMinimalDtoList(List<JobQuote> entities) {
+        return entities.stream().map(JobQuoteMapper::toMinimalDto).toList();
     }
 }

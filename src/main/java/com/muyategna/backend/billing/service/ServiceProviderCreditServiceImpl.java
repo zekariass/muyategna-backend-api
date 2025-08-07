@@ -1,12 +1,13 @@
 package com.muyategna.backend.billing.service;
 
-import com.muyategna.backend.billing.dto.service_credit_cost.ServiceCreditCostDto;
-import com.muyategna.backend.billing.entity.ServiceProviderCredit;
+import com.muyategna.backend.billing.entity.PayGoCredit;
 import com.muyategna.backend.billing.repository.ServiceProviderCreditRepository;
 import com.muyategna.backend.system.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 @Slf4j
@@ -22,26 +23,26 @@ public class ServiceProviderCreditServiceImpl implements ServiceProviderCreditSe
     }
 
     @Override
-    public boolean hasServiceProviderEnoughCredit(Long serviceProviderId, Long serviceId) {
+    public boolean hasServiceProviderEnoughCredit(Long serviceProviderId, Long serviceId, BigDecimal paygClaimCostPerLead) {
 
         log.info("Checking if Service Provider with ID: {} has enough credits for Service with ID: {}", serviceProviderId, serviceId);
-        // Retrieve service credit cost for the given service ID
-        ServiceCreditCostDto serviceCreditCost = serviceCreditCostService.findByServiceId(serviceId);
+//        // Retrieve service credit cost for the given service ID
+//        ServiceCreditCostDto serviceCreditCost = serviceCreditCostService.findByServiceId(serviceId);
 
         return serviceProviderCreditRepository
-                        .hasServiceProviderEnoughCredit(serviceProviderId, serviceCreditCost.getPaygCreditsPerLead());
+                .hasServiceProviderEnoughCredit(serviceProviderId, paygClaimCostPerLead);
     }
 
     @Override
-    public ServiceProviderCredit getServiceProviderCredit(Long serviceProviderId) {
-        log.info("Retrieving ServiceProviderCredit for Service Provider with ID: {}", serviceProviderId);
-        return serviceProviderCreditRepository.findByProviderId(serviceProviderId).
+    public PayGoCredit getServiceProviderCredit(Long serviceProviderId) {
+        log.info("Retrieving PayGoCredit for Service Provider with ID: {}", serviceProviderId);
+        return serviceProviderCreditRepository.findByProvider_id(serviceProviderId).
                 orElseThrow(() -> new ResourceNotFoundException("Service Provider Credit not found for Service Provider ID: " + serviceProviderId));
     }
 
     @Override
-    public void updateServiceProviderCredit(ServiceProviderCredit serviceProviderCredit) {
-        log.info("Updating ServiceProviderCredit with ID: {}", serviceProviderCredit.getId());
-        serviceProviderCreditRepository.save(serviceProviderCredit);
+    public void updateServiceProviderCredit(PayGoCredit payGoCredit) {
+        log.info("Updating PayGoCredit with ID: {}", payGoCredit.getId());
+        serviceProviderCreditRepository.save(payGoCredit);
     }
 }

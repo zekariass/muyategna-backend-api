@@ -1,5 +1,6 @@
 package com.muyategna.backend.job_request.dto.job_request;
 
+import com.muyategna.backend.common.enums.ServiceDeliveryMode;
 import com.muyategna.backend.job_request.enums.JobStatus;
 import com.muyategna.backend.location.dto.address.AddressCreateDto;
 import jakarta.validation.constraints.NotBlank;
@@ -39,11 +40,12 @@ public class JobRequestCreateDto {
     @NotNull(message = "Address is required")
     private AddressCreateDto addressCreateDto;
 
-//    private List<JobQuestionAnswerCreateDto> answerCreateDtoList;
     private List<Map<String, Object>> questionAnswers;
 
     private Map<String, Object> extraData;
 
     private List<MultipartFile> files;
+
+    private ServiceDeliveryMode deliveryMode;
 
 }

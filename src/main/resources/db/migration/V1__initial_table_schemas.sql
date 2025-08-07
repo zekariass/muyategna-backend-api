@@ -2,6 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS postgis; -- Enable PostGIS
 
 CREATE TYPE data_type_enum AS ENUM ('INTEGER', 'DOUBLE', 'BOOLEAN', 'STRING');
+CREATE TYPE service_delivery_mode_enum AS ENUM ('ONSITE', 'REMOTE', 'BOTH');
 
 -- Country Table
 CREATE TABLE IF NOT EXISTS country (
@@ -200,6 +201,9 @@ CREATE TABLE IF NOT EXISTS address (
     landmark VARCHAR(255),                      -- Landmark for easy identification
     postal_code VARCHAR(20),                    -- Postal code (e.g., '1234')
     geo_point GEOGRAPHY(POINT, 4326) NOT NULL, -- Geographic point for the address (latitude, longitude)
+    h3_index_res7 VARCHAR(30) NOT NULL,                       -- H3 index at resolution 7
+    h3_index_res8 VARCHAR(30) NOT NULL,                       -- H3 index at resolution 8
+    h3_index_res9 VARCHAR(30) NOT NULL,                       -- H3 index at resolution 9
     is_default_geo_point BOOLEAN DEFAULT TRUE,  -- Flag to indicate if this is the default geo-point populated from the nearest location entity
     full_address TEXT,                          -- Full address
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp of address creation
@@ -216,6 +220,9 @@ CREATE INDEX idx_address_sub_city_or_division_id ON address(sub_city_or_division
 CREATE INDEX idx_address_postal_code ON address(postal_code);
 CREATE INDEX idx_address_locality ON address(locality);
 CREATE INDEX idx_address_geo_point ON address USING GIST (geo_point);
+CREATE INDEX idx_address_h3_index_res7 ON address(h3_index_res7);
+CREATE INDEX idx_address_h3_index_res8 ON address(h3_index_res8);
+CREATE INDEX idx_address_h3_index_res9 ON address(h3_index_res9);
 
 
 -- Create UserProfile Table
@@ -234,6 +241,10 @@ CREATE TABLE IF NOT EXISTS user_profile (
     last_login TIMESTAMP,
     referral_code VARCHAR(30),
     is_staff BOOLEAN DEFAULT FALSE,
+
+    is_deleted BOOLEAN DEFAULT FALSE,
+    extra_ata JSONB,
+
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user_profile_country FOREIGN KEY (country_id) REFERENCES country(country_id),
@@ -280,6 +291,7 @@ CREATE TABLE IF NOT EXISTS service (
     service_category_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
+    delivery_mode service_delivery_mode_enum NOT NULL DEFAULT 'ONSITE',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_service_service_category FOREIGN KEY (service_category_id) REFERENCES service_category(id) ON DELETE CASCADE
@@ -328,20 +340,23 @@ CREATE INDEX idx_sca_country_id ON service_country_availability(country_id);
 CREATE INDEX idx_sca_price_model ON service_country_availability(price_model);
 
 
-CREATE TABLE service_credit_cost --service_credit_plan (
+
+CREATE TABLE service_credit_cost (
     id SERIAL PRIMARY KEY,
     service_id BIGINT NOT NULL UNIQUE,
---    credits_per_lead DECIMAL(10, 2) NOT NULL CHECK (credits_per_lead > 0),
+    payg_claim_cost_per_lead DECIMAL(10, 2) NOT NULL CHECK (payg_claim_cost_per_lead >= 0),
+    payg_acceptance_cost_per_lead DECIMAL(10, 2) NOT NULL CHECK (payg_acceptance_cost_per_lead >= 0),
+    subs_claim_cost_per_lead DECIMAL(10, 2) NOT NULL CHECK (subs_claim_cost_per_lead >= 0),
+    subs_acceptance_cost_per_lead DECIMAL(10, 2) NOT NULL CHECK (subs_acceptance_cost_per_lead >= 0),
 
-    payg_credits_per_lead DECIMAL(10, 2) NOT NULL CHECK (payg_credits_per_lead >= 0),
-    subs_credits_per_lead DECIMAL(10, 2) NOT NULL CHECK (subs_credits_per_lead >= 0),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_service_credit_plan_service FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE,
+    CONSTRAINT fk_service_credit_cost_service FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_service_credit_plan_service_id ON service_credit_plan(service_id);
+CREATE INDEX idx_service_credit_cost_service_id ON service_credit_cost(service_id);
+
 
 --================================================================================
 -- JOB QUESTION FLOW RELATED TABLES
@@ -579,6 +594,7 @@ CREATE TABLE IF NOT EXISTS job_request (
     address_id BIGINT,
     extra_data JSONB,
     rejection_reason_id BIGINT,
+    delivery_mode service_delivery_mode_enum NOT NULL DEFAULT 'ONSITE',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -695,9 +711,16 @@ CREATE TABLE IF NOT EXISTS service_provider (
     instagram VARCHAR(255),
     website VARCHAR(255),
 
+    default_language_id BIGINT NOT NULL,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
+    deleted_reason VARCHAR(255),
+    extra_data JSONB,
+
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_service_provider_business_address FOREIGN KEY (business_address_id) REFERENCES address(address_id) ON DELETE SET NULL,
+    CONSTRAINT fk_service_provider_default_language FOREIGN KEY (default_language_id) REFERENCES language(language_id) ON DELETE SET NULL,
     CONSTRAINT fk_service_provider_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE SET NULL,
     CONSTRAINT chk_number_of_employees CHECK (service_provider_type != 'FREELANCER' OR num_employees = 1)
 );
@@ -718,6 +741,9 @@ CREATE TABLE service_provider_statistics (
     weekly_claim_count INT DEFAULT 0,
     two_weekly_claim_count INT DEFAULT 0,
     monthly_claim_count INT DEFAULT 0,
+    total_new_job_notifs INT DEFAULT 0,
+    daily_new_job_notifs INT DEFAULT 0,
+    weekly_new_job_notifs INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -725,7 +751,31 @@ CREATE TABLE service_provider_statistics (
 );
 
 CREATE INDEX idx_service_provider_statistics_provider ON service_provider_statistics(provider_id);
+--CREATE INDEX idx_service_provider_statistics_score ON service_provider_statistics(score);
+--CREATE INDEX idx_service_provider_statistics_provider_id_score ON service_provider_statistics(provider_id, score);
 
+CREATE TABLE service_provider_ranking_weights (
+    id BIGSERIAL PRIMARY KEY,
+
+    distance_weight NUMERIC(10, 2), -- weight for distanceMeters
+    total_claims_weight NUMERIC(10, 2),
+    avg_claim_time_in_mins_weight NUMERIC(10, 2),
+    avg_rating_weight NUMERIC(10, 2),
+    completed_leads_weight NUMERIC(10, 2),
+    total_quotes_weight NUMERIC(10, 2),
+    accepted_quotes_weight NUMERIC(10, 2),
+    daily_claim_count_weight NUMERIC(10, 2),
+    weekly_claim_count_weight NUMERIC(10, 2),
+    two_weekly_claim_count_weight NUMERIC(10, 2),
+    monthly_claim_count_weight NUMERIC(10, 2),
+
+    is_active BOOLEAN DEFAULT true,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX idx_single_active_service_provider_ranking_weights ON service_provider_ranking_weights(is_active) WHERE is_active = true;
 
 
 CREATE TABLE IF NOT EXISTS service_employee (
@@ -770,6 +820,7 @@ CREATE TABLE IF NOT EXISTS service_provider_services (
     service_id BIGINT NOT NULL,
     provider_id BIGINT NOT NULL,
     is_active BOOLEAN DEFAULT true,
+    delivery_mode service_delivery_mode_enum NOT NULL DEFAULT 'ONSITE',
     linked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -1156,7 +1207,8 @@ CREATE INDEX idx_add_on_txn_transaction ON add_on_transaction(transaction_id);
 --CREATE INDEX idx_add_on_transaction_service_provider_add_on ON add_on_transaction(service_provider_add_on_id);
 
 
-CREATE TABLE service_provider_credit (
+--CREATE TABLE service_provider_credit (
+CREATE TABLE pay_go_credit (
     id BIGSERIAL PRIMARY KEY,
     provider_id BIGINT NOT NULL,
     balance NUMERIC(15, 4) NOT NULL DEFAULT 0.00,
@@ -1173,24 +1225,25 @@ CREATE TABLE service_provider_credit (
 
 CREATE INDEX idx_service_provider_credit_provider_id ON service_provider_credit(provider_id);
 
-
-CREATE TABLE service_provider_credit_usage (
-    id BIGSERIAL PRIMARY KEY,
---    usage_ref VARCHAR(50) NOT NULL UNIQUE,
-    provider_id BIGINT NOT NULL,
---    service_provider_lead_id BIGINT NOT NULL,
-    job_lead_claim_id BIGINT NOT NULL,
-    used_credit_amount NUMERIC(15, 4) NOT NULL CHECK (used_credit_amount >= 0),
-    extra_data JSONB,
-    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_credit_usage_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
-    CONSTRAINT fk_credit_usage_job_lead_claim FOREIGN KEY (job_lead_claim_id) REFERENCES job_lead_claim(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_credit_usage_provider_id ON service_provider_credit_usage(provider_id);
-CREATE INDEX idx_credit_usage_claim_id ON service_provider_credit_usage(job_lead_claim_id);
-
+--
+----CREATE TABLE service_provider_credit_usage (
+--CREATE TABLE pay_go_credit_usage (
+--    id BIGSERIAL PRIMARY KEY,
+----    usage_ref VARCHAR(50) NOT NULL UNIQUE,
+--    provider_id BIGINT NOT NULL,
+----    service_provider_lead_id BIGINT NOT NULL,
+--    job_lead_claim_id BIGINT NOT NULL,
+--    used_credit_amount NUMERIC(15, 4) NOT NULL CHECK (used_credit_amount >= 0),
+--    extra_data JSONB,
+--    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--
+--    CONSTRAINT fk_credit_usage_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+--    CONSTRAINT fk_credit_usage_job_lead_claim FOREIGN KEY (job_lead_claim_id) REFERENCES job_lead_claim(id) ON DELETE CASCADE
+--);
+--
+--CREATE INDEX idx_credit_usage_provider_id ON service_provider_credit_usage(provider_id);
+--CREATE INDEX idx_credit_usage_claim_id ON service_provider_credit_usage(job_lead_claim_id);
+--
 
 
 CREATE TABLE subscription_plan (
@@ -1289,7 +1342,8 @@ CREATE TABLE service_provider_subscription (
     provider_id BIGINT NOT NULL,
     subscription_plan_id BIGINT,
     initial_credits DECIMAL(10,2) NOT NULL CHECK (initial_credits >= 0),
-    used_credits DECIMAL(10,2) NOT NULL CHECK (used_credits >= 0),
+--    used_credits DECIMAL(10,2) NOT NULL CHECK (used_credits >= 0),
+    balance DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0),
     auto_renew BOOLEAN NOT NULL DEFAULT TRUE, -- Whether the subscription auto-renews
     upgraded_from BIGINT,
     downgraded_from BIGINT,
@@ -1323,6 +1377,80 @@ ON service_provider_subscription(provider_id)
 WHERE is_active = true;
 
 
+CREATE TYPE credit_source_enum AS ENUM ('PAYGO', 'SUBSCRIPTION', 'HYBRID');
+CREATE TYPE hold_status_enum AS ENUM ('ACTIVE', 'RELEASED', 'CONVERTED', 'EXPIRED');
+
+
+CREATE TABLE service_provider_wallet (
+    id BIGSERIAL PRIMARY KEY,
+    provider_id BIGINT NOT NULL,
+    paygo_credit_id BIGINT,
+    subscription_id BIGINT,
+
+    total_credit NUMERIC(10, 2) NOT NULL DEFAULT 0.00 CHECK (total_credit >= 0),
+    total_hold_credit NUMERIC(10, 2) NOT NULL DEFAULT 0.00 CHECK (total_hold_credit >= 0),
+    available_credit NUMERIC(10, 2) NOT NULL DEFAULT 0.00 CHECK (available_credit >= 0),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_wallet_paygo_credit FOREIGN KEY (paygo_credit_id) REFERENCES pay_go_credit(id) ON DELETE SET NULL,
+    CONSTRAINT fk_wallet_subscription FOREIGN KEY (subscription_id) REFERENCES service_provider_subscription(id) ON DELETE SET NULL,
+    CONSTRAINT fk_wallet_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+    CONSTRAINT uq_provider_wallet UNIQUE (provider_id)
+);
+
+CREATE INDEX idx_wallet_paygo_credit_id ON service_provider_wallet(paygo_credit_id);
+CREATE INDEX idx_wallet_subscription_id ON service_provider_wallet(subscription_id);
+CREATE INDEX idx_wallet_provider_id ON service_provider_wallet(provider_id);
+
+
+
+CREATE TABLE hold_credit (
+    id BIGSERIAL PRIMARY KEY,
+    provider_wallet_id BIGINT,
+    job_lead_claim_id BIGINT,
+
+    hold_amount NUMERIC(10, 2) NOT NULL,
+    credit_source credit_source_enum NOT NULL,
+    status hold_status_enum NOT NULL DEFAULT 'ACTIVE',
+
+    hold_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    released_at TIMESTAMP,
+    converted_at TIMESTAMP,
+    expired_at TIMESTAMP,
+
+    CONSTRAINT fk_hold_credit_provider_wallet FOREIGN KEY (provider_wallet_id) REFERENCES service_provider_wallet(id) ON DELETE SET NULL,
+    CONSTRAINT fk_hold_credit_job_lead_claim FOREIGN KEY (job_lead_claim_id) REFERENCES job_lead_claim(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_hold_credit_provider_wallet_id ON hold_credit(provider_wallet_id);
+CREATE INDEX idx_hold_credit_job_lead_claim_id ON hold_credit(job_lead_claim_id);
+
+
+CREATE TABLE credit_usage (
+    id BIGSERIAL PRIMARY KEY,
+
+    provider_id BIGINT NOT NULL,
+    job_lead_claim_id BIGINT,
+
+    used_amount NUMERIC(10, 2) NOT NULL DEFAULT 0.00 CHECK (used_amount >= 0),
+    credit_source credit_source_enum NOT NULL,
+    is_partial BOOLEAN NOT NULL, -- If the credit usage is partial or not (in case if split payment between acceptance and claim cost, then this will be true)
+    extra_data JSONB,
+
+    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_credit_usage_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+    CONSTRAINT fk_credit_usage_job_lead_claim FOREIGN KEY (job_lead_claim_id) REFERENCES job_lead_claim(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_credit_usage_provider_id ON credit_usage(provider_id);
+CREATE INDEX idx_credit_usage_job_lead_claim_id ON credit_usage(job_lead_claim_id);
+
+
+
+
 CREATE TABLE subscription_transaction (
     id BIGSERIAL PRIMARY KEY,
     subscription_plan_id BIGINT,
@@ -1348,52 +1476,27 @@ CREATE INDEX idx_subscription_txn_subscription_plan_id ON subscription_transacti
 CREATE INDEX idx_subscription_txn_transaction_id ON subscription_transaction(transaction_id);
 
 
---CREATE TABLE subscription_transaction (
+--
+--CREATE TABLE service_provider_subscription_usage (
 --    id BIGSERIAL PRIMARY KEY,
---    service_provider_subscription_id BIGINT,
---    transaction_id BIGINT,
---    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    subscription_id BIGINT, -- NULLABLE for ON DELETE SET NULL
+--    job_lead_claim_id BIGINT, -- Reference to the job lead claim
+--
+--    -- NEW FIELDS
+--    used_credits DECIMAL(10,2) NOT NULL DEFAULT 0.00, -- Number of credits used for this claim
+--
+--    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 --    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 --
---    CONSTRAINT fk_subscription_transaction_subscription
---        FOREIGN KEY (service_provider_subscription_id)
---        REFERENCES service_provider_subscription(id)
---        ON DELETE SET NULL,
---
---    CONSTRAINT fk_subscription_transaction_transaction
---        FOREIGN KEY (transaction_id)
---        REFERENCES transaction(id)
---        ON DELETE SET NULL
---
+--    CONSTRAINT fk_usage_subscription FOREIGN KEY (subscription_id)
+--        REFERENCES service_provider_subscription(id) ON DELETE SET NULL,
+--    CONSTRAINT fk_usage_job_lead_claim FOREIGN KEY (job_lead_claim_id)
+--        REFERENCES job_lead_claim(id) ON DELETE SET NULL
 --);
 --
---CREATE INDEX idx_subscription_transaction_subscription
---    ON subscription_transaction(service_provider_subscription_id);
+--CREATE INDEX idx_sp_subscription_usage_subscription ON service_provider_subscription_usage(subscription_id);
+--CREATE INDEX idx_sp_subscription_usage_job_lead_claim ON service_provider_subscription_usage(job_lead_claim_id);
 --
---CREATE INDEX idx_subscription_transaction_transaction
---    ON subscription_transaction(transaction_id);
-
-
-CREATE TABLE service_provider_subscription_usage (
-    id BIGSERIAL PRIMARY KEY,
-    subscription_id BIGINT, -- NULLABLE for ON DELETE SET NULL
-    job_lead_claim_id BIGINT, -- Reference to the job lead claim
-
-    -- NEW FIELDS
-    used_credits DECIMAL(10,2) NOT NULL DEFAULT 0.00, -- Number of credits used for this claim
-
-    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_usage_subscription FOREIGN KEY (subscription_id)
-        REFERENCES service_provider_subscription(id) ON DELETE SET NULL,
-    CONSTRAINT fk_usage_job_lead_claim FOREIGN KEY (job_lead_claim_id)
-        REFERENCES job_lead_claim(id) ON DELETE SET NULL
-);
-
-CREATE INDEX idx_sp_subscription_usage_subscription ON service_provider_subscription_usage(subscription_id);
-CREATE INDEX idx_sp_subscription_usage_job_lead_claim ON service_provider_subscription_usage(job_lead_claim_id);
-
 
 
 CREATE TABLE discount_plan (
@@ -1629,7 +1732,8 @@ CREATE TYPE job_quote_status_enum AS ENUM (
     'WITHDRAWN'    -- provider
 );
 
-CREATE TYPE notification_recipient_type_enum AS ENUM ('SERVICE_PROVIDER','CUSTOMER', 'EMPLOYEE', 'OWNER', 'MANAGER', 'ALL');
+--CREATE TYPE
+-- AS ENUM ('SERVICE_PROVIDER','CUSTOMER', 'EMPLOYEE', 'OWNER', 'MANAGER', 'ALL');
 CREATE TYPE message_context_type_enum AS ENUM ('JOB', 'SUPPORT', 'QUOTATION', 'GENERAL');
 
 -- Skill
@@ -1688,6 +1792,9 @@ CREATE TABLE job_lead (
 );
 CREATE INDEX idx_job_lead_job_request_id ON job_lead(job_request_id);
 CREATE INDEX idx_job_lead_status ON job_lead(status);
+CREATE UNIQUE INDEX idx_job_lead_open_or_partial_per_request
+ON job_lead(job_request_id)
+WHERE status IN ('OPEN', 'CLAIMED_PARTIALLY');
 
 -- ServiceProviderLead
 CREATE TABLE job_lead_claim (
@@ -1750,16 +1857,19 @@ CREATE INDEX idx_spq_status ON service_provider_quote(status);
 
 CREATE TABLE invite_for_quote (
     id BIGSERIAL PRIMARY KEY,
-    lead_id BIGINT NOT NULL,
+    job_request_id BIGINT NOT NULL,
     provider_id BIGINT NOT NULL,
     viewed BOOLEAN DEFAULT FALSE,
     invited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    accepted_at TIMESTAMP,
+    viewed_at TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (lead_id) REFERENCES job_lead(id) ON DELETE CASCADE,
-    FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE
+    FOREIGN KEY (job_request_id) REFERENCES job_request(id) ON DELETE CASCADE,
+    FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+    CONSTRAINT uq_invite_for_quote_job_request_id_provider_id UNIQUE (job_request_id, provider_id)
 );
 
-CREATE INDEX idx_invite_for_quote_lead_id ON invite_for_quote(lead_id);
+CREATE INDEX idx_invite_for_quote_job_request_id ON invite_for_quote(job_request_id);
 CREATE INDEX idx_invite_for_quote_provider_id ON invite_for_quote(provider_id);
 
 
@@ -1853,86 +1963,276 @@ CREATE TABLE message_attachment (
 CREATE INDEX idx_ma_message_id ON message_attachment(message_id);
 
 
--- NotificationType
-CREATE TABLE notification_type (
+
+--==================== OLD NOTIFICATION TABLES ====================
+--
+---- NotificationType
+--CREATE TABLE notification_channel (
+--    id BIGSERIAL PRIMARY KEY,
+--    name VARCHAR(100) NOT NULL UNIQUE,
+--    recipient_type notification_recipient_type_enum NOT NULL,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+--);
+--
+--CREATE INDEX idx_nt_recipient_type ON notification_channel(recipient_type);
+--CREATE INDEX idx_nt_name ON notification_channel(name);
+--
+--
+--
+---- NotificationTypeTranslation
+--CREATE TABLE notification_channel_translation (
+--    id BIGSERIAL PRIMARY KEY,
+--    notification_channel_id BIGINT NOT NULL,
+--    display_name VARCHAR(100) NOT NULL,
+--    description TEXT,
+--    language_id BIGINT NOT NULL,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    CONSTRAINT fk_ntt_notification_channel FOREIGN KEY (notification_channel_id) REFERENCES notification_channel(id) ON DELETE CASCADE,
+--    CONSTRAINT fk_ntt_language FOREIGN KEY (language_id) REFERENCES language(language_id),
+--    CONSTRAINT uq_ntt_notification_channel_id_language_id UNIQUE (notification_channel_id, language_id)
+--);
+--CREATE INDEX idx_ntt_notification_channel_id ON notification_channel_translation(notification_channel_id);
+--CREATE INDEX idx_ntt_language_id ON notification_channel_translation(language_id);
+--CREATE INDEX idx_ntt_notification_channel_id_language_id ON notification_channel_translation(notification_channel_id, language_id);
+--
+--
+---- Notification
+--CREATE TABLE notification (
+--    id BIGSERIAL PRIMARY KEY,
+--    notification_channel_id BIGINT NOT NULL,
+--    title VARCHAR(100) NOT NULL,
+--    content TEXT NOT NULL,
+--    read_at TIMESTAMP,
+----    redirect_url TEXT,
+--    action_url TEXT, -- URL path to redirect when the notification is clicked
+--    is_broadcast BOOLEAN NOT NULL DEFAULT FALSE,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    CONSTRAINT fk_notification_channel FOREIGN KEY (notification_channel_id) REFERENCES notification_channel(id)
+--);
+--CREATE INDEX idx_notification_channel_id ON notification(notification_channel_id);
+--
+--
+---- NotificationRecipient
+--CREATE TABLE notification_recipient (
+--    id BIGSERIAL PRIMARY KEY,
+--    recipient_id BIGINT NOT NULL,
+--    notification_id BIGINT NOT NULL,
+----    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+--    read_at TIMESTAMP,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    CONSTRAINT uq_nr_recipient_id_notification_id UNIQUE (recipient_id, notification_id),
+--    CONSTRAINT fk_nr_recipient FOREIGN KEY (recipient_id) REFERENCES user_profile(user_profile_id) ON DELETE CASCADE,
+--    CONSTRAINT fk_nr_notification FOREIGN KEY (notification_id) REFERENCES notification(id)
+--);
+--CREATE INDEX idx_nr_recipient_id ON notification_recipient(recipient_id);
+--CREATE INDEX idx_nr_notification_id ON notification_recipient(notification_id);
+--
+--
+---- NotificationPreference
+--CREATE TABLE notification_preference (
+--    id BIGSERIAL PRIMARY KEY,
+--    notification_channel_id BIGINT NOT NULL,
+--    recipient_id BIGINT NOT NULL,
+--    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    CONSTRAINT uq_np_notification_channel_id_recipient_id UNIQUE (notification_channel_id, recipient_id),
+--    CONSTRAINT fk_np_notification_channel FOREIGN KEY (notification_channel_id) REFERENCES notification_channel(id),
+--    CONSTRAINT fk_np_recipient FOREIGN KEY (recipient_id) REFERENCES user_profile(user_profile_id)
+--);
+--CREATE INDEX idx_np_notification_channel_id ON notification_preference(notification_channel_id);
+--CREATE INDEX idx_np_recipient_id ON notification_preference(recipient_id);
+--====================== END OLD NOTIFICATION TABLES ====================
+--======================= NEW NOTIFICATION TABLES =======================
+
+CREATE TYPE channel_name_enum AS ENUM (
+    'EMAIL',
+    'SMS',
+    'PUSH',
+    'WHATSAPP',
+    'TELEGRAM'
+ );
+
+CREATE TYPE notification_recipient_type_enum AS ENUM (
+    'SERVICE_PROVIDER',
+    'CUSTOMER',
+    'EMPLOYEE',
+    'OWNER',
+    'MANAGER',
+    'ALL');
+
+CREATE TYPE notification_status_enum AS ENUM (
+    'PENDING',
+    'SENT',
+    'FAILED',
+    'QUEUED');
+
+
+CREATE TABLE notification_channel (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    recipient_type notification_recipient_type_enum NOT NULL,
+    name channel_name_enum NOT NULL UNIQUE, -- e.g., 'Email', 'SMS', 'Push'
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE INDEX idx_nt_recipient_type ON notification_type(recipient_type);
-CREATE INDEX idx_nt_name ON notification_type(name);
+CREATE INDEX idx_nt_name ON notification_channel(name);
 
 
-
--- NotificationTypeTranslation
-CREATE TABLE notification_type_translation (
+CREATE TABLE notification_channel_translation (
     id BIGSERIAL PRIMARY KEY,
-    notification_type_id BIGINT NOT NULL,
-    display_name VARCHAR(100) NOT NULL,
+    notification_channel_id BIGINT NOT NULL,
+    display_name VARCHAR(50) NOT NULL UNIQUE, -- e.g., 'Email', 'SMS', 'Push'
     description TEXT,
-    language_id BIGINT NOT NULL,
+    language_id BIGINT NOT NULL, -- Foreign key to language
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_ntt_notification_type FOREIGN KEY (notification_type_id) REFERENCES notification_type(id) ON DELETE CASCADE,
+
     CONSTRAINT fk_ntt_language FOREIGN KEY (language_id) REFERENCES language(language_id),
-    CONSTRAINT uq_ntt_notification_type_id_language_id UNIQUE (notification_type_id, language_id)
+    CONSTRAINT fk_ntt_notification_channel FOREIGN KEY (notification_channel_id) REFERENCES notification_channel(id),
+    CONSTRAINT uq_ntt_notification_channel_id_language_id UNIQUE (notification_channel_id, language_id)
 );
-CREATE INDEX idx_ntt_notification_type_id ON notification_type_translation(notification_type_id);
-CREATE INDEX idx_ntt_language_id ON notification_type_translation(language_id);
-CREATE INDEX idx_ntt_notification_type_id_language_id ON notification_type_translation(notification_type_id, language_id);
+
+CREATE INDEX idx_ntt_notification_channel_id ON notification_channel_translation(notification_channel_id);
+CREATE INDEX idx_ntt_language_id ON notification_channel_translation(language_id);
+CREATE INDEX idx_ntt_notification_channel_id_language_id ON notification_channel_translation(notification_channel_id, language_id);
 
 
--- Notification
+CREATE TABLE notification_category (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL, -- e.g., 'Marketing', 'Transactional'
+    recipient_type notification_recipient_type_enum NOT NULL,
+    user_can_opt_out BOOLEAN NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(name, recipient_type)
+);
+CREATE INDEX idx_nc_name ON notification_category(name);
+
+
+CREATE TABLE notification_category_translation (
+    id BIGSERIAL PRIMARY KEY,
+    notification_category_id BIGINT NOT NULL,
+    display_name VARCHAR(100) NOT NULL UNIQUE, -- e.g., 'Marketing', 'Transactional'
+    description TEXT,
+    language_id BIGINT NOT NULL, -- Foreign key to language
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_nct_language FOREIGN KEY (language_id) REFERENCES language(language_id) ON DELETE CASCADE,
+    CONSTRAINT fk_nct_notification_category FOREIGN KEY (notification_category_id) REFERENCES notification_category(id) ON DELETE CASCADE,
+    CONSTRAINT uq_nct_notification_category_id_language_id UNIQUE (notification_category_id, language_id)
+);
+
+CREATE INDEX idx_nct_notification_category_id ON notification_category_translation(notification_category_id);
+CREATE INDEX idx_nct_language_id ON notification_category_translation(language_id);
+CREATE INDEX idx_nct_notification_category_id_language_id ON notification_category_translation(notification_category_id, language_id);
+
+
+CREATE TABLE notification_template (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL, -- e.g., 'Welcome Email'
+    notification_channel_id BIGINT NOT NULL,
+    notification_category_id BIGINT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(name, notification_channel_id, notification_category_id),
+    CONSTRAINT fk_nt_notification_channel FOREIGN KEY (notification_channel_id) REFERENCES notification_channel(id) ON DELETE CASCADE,
+    CONSTRAINT fk_nt_notification_category FOREIGN KEY (notification_category_id) REFERENCES notification_category(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ntmp_name ON notification_template(name);
+CREATE INDEX idx_ntmp_notification_channel_id ON notification_template(notification_channel_id);
+CREATE INDEX idx_ntmp_notification_category_id ON notification_template(notification_category_id);
+
+
+CREATE TABLE notification_template_translation (
+    id BIGSERIAL PRIMARY KEY,
+    template_id BIGINT NOT NULL,
+    language_id BIGINT NOT NULL,
+    subject_template VARCHAR(255) NOT NULL,
+    body_template TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ntt_template FOREIGN KEY (template_id) REFERENCES notification_template(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ntt_language FOREIGN KEY (language_id) REFERENCES language(language_id) ON DELETE CASCADE,
+    CONSTRAINT uq_ntt_template_id_language_id UNIQUE (template_id, language_id)
+);
+
+CREATE INDEX idx_ntmpt_template_id ON notification_template_translation(template_id);
+CREATE INDEX idx_ntmpt_language_id ON notification_template_translation(language_id);
+CREATE INDEX idx_ntmpt_template_id_language_id ON notification_template_translation(template_id, language_id);
+
+
 CREATE TABLE notification (
     id BIGSERIAL PRIMARY KEY,
-    notification_type_id BIGINT NOT NULL,
-    title VARCHAR(100) NOT NULL,
-    content TEXT NOT NULL,
-    read_at TIMESTAMP,
---    redirect_url TEXT,
-    action_url TEXT, -- URL path to redirect when the notification is clicked
-    is_broadcast BOOLEAN NOT NULL DEFAULT FALSE,
+    recipient_entity_type notification_recipient_type_enum NOT NULL,
+    recipient_entity_id BIGINT NOT NULL,
+    notification_template_id BIGINT NOT NULL,
+    notification_channel_id BIGINT NOT NULL,
+    notification_category_id BIGINT NOT NULL,
+    status notification_status_enum NOT NULL DEFAULT 'PENDING', -- PENDING, SENT, FAILED, QUEUED
+    payload JSONB, -- the dynamic data to be filled in the template
+    subject VARCHAR(255),
+    body TEXT, -- the rendered template
+    sent_at TIMESTAMP,
+    error_message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_notification_type FOREIGN KEY (notification_type_id) REFERENCES notification_type(id)
+
+    CONSTRAINT fk_n_notification_template FOREIGN KEY (notification_template_id) REFERENCES notification_template(id) ON DELETE CASCADE,
+    CONSTRAINT fk_n_notification_channel FOREIGN KEY (notification_channel_id) REFERENCES notification_channel(id) ON DELETE CASCADE,
+    CONSTRAINT fk_n_notification_category FOREIGN KEY (notification_category_id) REFERENCES notification_category(id) ON DELETE CASCADE
 );
-CREATE INDEX idx_notification_type_id ON notification(notification_type_id);
+
+CREATE INDEX idx_n_notification_template_id ON notification(notification_template_id);
+CREATE INDEX idx_n_notification_channel_id ON notification(notification_channel_id);
+CREATE INDEX idx_n_notification_category_id ON notification(notification_category_id);
+CREATE INDEX idx_n_status ON notification(status);
 
 
--- NotificationRecipient
-CREATE TABLE notification_recipient (
+
+CREATE TABLE user_notification_preference (
     id BIGSERIAL PRIMARY KEY,
-    recipient_id BIGINT NOT NULL,
-    notification_id BIGINT NOT NULL,
---    is_read BOOLEAN NOT NULL DEFAULT FALSE,
-    read_at TIMESTAMP,
+    user_profile_id BIGINT NOT NULL, -- notification_recipient_type_enum NOT NULL, -- e.g., 'SERVICE_PROVIDER', 'CUSTOMER', 'EMPLOYEE', 'OWNER', 'MANAGER', 'ALL'
+    notification_channel_id BIGINT NOT NULL,
+    notification_category_id BIGINT NOT NULL,
+    is_enabled BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_nr_recipient_id_notification_id UNIQUE (recipient_id, notification_id),
-    CONSTRAINT fk_nr_recipient FOREIGN KEY (recipient_id) REFERENCES user_profile(user_profile_id) ON DELETE CASCADE,
-    CONSTRAINT fk_nr_notification FOREIGN KEY (notification_id) REFERENCES notification(id)
+
+    CONSTRAINT fk_user_np_notification_channel FOREIGN KEY (notification_channel_id) REFERENCES notification_channel(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_np_notification_category FOREIGN KEY (notification_category_id) REFERENCES notification_category(id) ON DELETE CASCADE,
+    CONSTRAINT uq_user_notification_preference UNIQUE(user_profile_id, notification_channel_id, notification_category_id)
 );
-CREATE INDEX idx_nr_recipient_id ON notification_recipient(recipient_id);
-CREATE INDEX idx_nr_notification_id ON notification_recipient(notification_id);
+
+CREATE INDEX idx_user_np_notification_channel_id ON user_notification_preference(notification_channel_id);
+CREATE INDEX idx_user_np_notification_category_id ON user_notification_preference(notification_category_id);
 
 
--- NotificationPreference
-CREATE TABLE notification_preference (
+
+CREATE TABLE service_provider_notification_preference (
     id BIGSERIAL PRIMARY KEY,
-    notification_type_id BIGINT NOT NULL,
-    recipient_id BIGINT NOT NULL,
-    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    service_provider_id BIGINT NOT NULL,
+    notification_channel_id BIGINT NOT NULL,
+    notification_category_id BIGINT NOT NULL,
+    is_enabled BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_np_notification_type_id_recipient_id UNIQUE (notification_type_id, recipient_id),
-    CONSTRAINT fk_np_notification_type FOREIGN KEY (notification_type_id) REFERENCES notification_type(id),
-    CONSTRAINT fk_np_recipient FOREIGN KEY (recipient_id) REFERENCES user_profile(user_profile_id)
+
+    CONSTRAINT fk_sp_np_notification_channel FOREIGN KEY (notification_channel_id) REFERENCES notification_channel(id) ON DELETE CASCADE,
+    CONSTRAINT fk_sp_np_notification_category FOREIGN KEY (notification_category_id) REFERENCES notification_category(id) ON DELETE CASCADE,
+    CONSTRAINT uq_sp_notification_preference UNIQUE(service_provider_id, notification_channel_id, notification_category_id)
 );
-CREATE INDEX idx_np_notification_type_id ON notification_preference(notification_type_id);
-CREATE INDEX idx_np_recipient_id ON notification_preference(recipient_id);
+
+CREATE INDEX idx_sp_np_notification_channel_id ON service_provider_notification_preference(notification_channel_id);
+CREATE INDEX idx_sp_np_notification_category_id ON service_provider_notification_preference(notification_category_id);
+
+--================================ END NEW NOTIFICATION TABLES =======================
 
 --=================================================================================
 -- SYSTEM

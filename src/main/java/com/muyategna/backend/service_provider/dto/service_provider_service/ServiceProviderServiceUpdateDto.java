@@ -1,5 +1,6 @@
 package com.muyategna.backend.service_provider.dto.service_provider_service;
 
+import com.muyategna.backend.common.enums.ServiceDeliveryMode;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,11 +14,13 @@ import lombok.NoArgsConstructor;
 public class ServiceProviderServiceUpdateDto {
     @NotNull(message = "ID is required")
     private Long id;
-    
+
     @NotNull(message = "Service ID is required")
     private Long serviceId;
 
     @NotNull(message = "Provider ID is required")
     private Long providerId;
     private Boolean isActive;
+
+    private ServiceDeliveryMode deliveryMode;
 }

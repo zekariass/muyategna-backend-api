@@ -24,8 +24,8 @@ public class JobLeadDtoModelAssembler {
     public EntityModel<JobLeadListDto> toModel(JobLeadListDto jobLeadListDto, Long serviceProviderId, Integer page, Integer size, String sortBy, HttpServletRequest request) {
         // Convert JobLeadListDto to EntityModel<JobLeadListDto>
         return EntityModel.of(jobLeadListDto)
-                .add(linkTo(methodOn(JobLeadSecuredPublicController.class).getAllJobLeadsClosestToTheServiceProvider(serviceProviderId, page, size, sortBy, request)).withSelfRel());
-                }
+                .add(linkTo(methodOn(JobLeadSecuredPublicController.class).getJobLeadsClosestToTheServiceProvider(serviceProviderId, page, size, sortBy, request)).withSelfRel());
+    }
 
     public CollectionModel<EntityModel<JobLeadListDto>> toCollectionModel(Iterable<? extends JobLeadListDto> jobLeads, Long serviceProviderId, Integer page, Integer size, String sortBy, HttpServletRequest request) {
         List<EntityModel<JobLeadListDto>> jobLeadsModel = StreamSupport.stream(jobLeads.spliterator(), false)

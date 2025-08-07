@@ -1,5 +1,7 @@
 package com.muyategna.backend.job_request.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.muyategna.backend.common.enums.ServiceDeliveryMode;
 import com.muyategna.backend.job_request.enums.JobStatus;
 import com.muyategna.backend.location.entity.Address;
 import com.muyategna.backend.professional_service.entity.Service;
@@ -9,6 +11,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.Type;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
@@ -65,6 +68,10 @@ public class JobRequest {
     @JoinColumn(name = "start_window_id", nullable = false)
     private JobStartTimeWindow startTimeWindow;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    private ServiceDeliveryMode deliveryMode = ServiceDeliveryMode.ONSITE;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -81,6 +88,11 @@ public class JobRequest {
     @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<JobRequestMedia> mediaList;
 
+    @OneToMany(mappedBy = "jobRequest", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @ToString.Exclude
+    private List<JobLead> jobLeads;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -88,4 +100,23 @@ public class JobRequest {
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+
+    @Transient
+    @JsonIgnore
+    public boolean isOpen() {
+        return status == JobStatus.OPEN;
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean isReopened() {
+        return status == JobStatus.REOPEN;
+    }
+
+    @Transient
+    @JsonIgnore
+    public boolean isCancelled() {
+        return status == JobStatus.CANCELLED;
+    }
 }

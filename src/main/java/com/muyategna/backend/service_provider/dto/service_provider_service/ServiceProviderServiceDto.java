@@ -1,5 +1,6 @@
 package com.muyategna.backend.service_provider.dto.service_provider_service;
 
+import com.muyategna.backend.common.enums.ServiceDeliveryMode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +17,7 @@ public class ServiceProviderServiceDto {
     private Long serviceId;
     private Long providerId;
     private Boolean isActive;
+    private ServiceDeliveryMode deliveryMode;
     private LocalDateTime linkedAt;
     private LocalDateTime updatedAt;
 }

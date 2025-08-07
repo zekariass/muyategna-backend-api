@@ -7,6 +7,8 @@ import com.muyategna.backend.system.entity.SystemConfig;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public interface SystemConfigService {
     Page<SystemConfigDto> getAllSystemConfigsFromDB(Pageable pageable);
 
@@ -19,6 +21,8 @@ public interface SystemConfigService {
     void deleteSystemConfig(Long systemConfigId);
 
     SystemConfigDto getSystemConfigByNameFromDB(String name);
+
     SystemConfig getSystemConfigByName(String name);
 
+    List<SystemConfig> getSystemConfigsByName(List<String> configNames);
 }

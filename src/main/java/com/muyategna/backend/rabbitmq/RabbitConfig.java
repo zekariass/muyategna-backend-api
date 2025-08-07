@@ -32,7 +32,22 @@ public class RabbitConfig {
                 QueueSpec.withBaseName(Constants.SP_RANKING_FOR_NEW_LEAD_ASSIGNMENT_QUEUE_BASE_NAME),
                 QueueSpec.withBaseName(Constants.JOB_LEAD_REMINDER_QUEUE_BASE_NAME),
                 QueueSpec.withBaseName(Constants.SP_RANKING_FOR_LEAD_REASSIGNMENT_QUEUE_BASE_NAME),
-                QueueSpec.withBaseName(Constants.JOB_LEAD_ASSIGNMENT_QUEUE_BASE_NAME)
+                QueueSpec.withBaseName(Constants.JOB_LEAD_ASSIGNMENT_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_NEAR_BY_SERVICE_PROVIDERS_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.SERVICE_PROVIDERS_RANKING_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_CUSTOMER_ABOUT_NEW_JOB_REQUEST_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_SP_ABOUT_NEW_CLAIM_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_CUSTOMER_ABOUT_NEW_CLAIM_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_CUSTOMER_ABOUT_JOB_STATUS_CHANGE_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_SP_ABOUT_JOB_STATUS_CHANGE_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_CUSTOMER_ABOUT_REQUOTE_REQUEST_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_SP_ABOUT_REQUOTE_REQUEST_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_CUSTOMER_ABOUT_NEW_QUOTE_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_SP_ABOUT_NEW_QUOTE_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_CUSTOMER_ABOUT_QUOTE_STATUS_CHANGE_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_SP_ABOUT_QUOTE_STATUS_CHANGE_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_CUSTOMER_ABOUT_CLAIM_STATUS_CHANGE_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.NOTIFY_SP_ABOUT_CLAIM_STATUS_CHANGE_QUEUE_BASE_NAME)
 
         );
     }
@@ -80,7 +95,6 @@ public class RabbitConfig {
 
         return new Declarables(declarables);
     }
-
 
 
     @Bean

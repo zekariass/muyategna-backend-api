@@ -13,8 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -31,45 +30,87 @@ public class ServiceTranslationServiceImpl implements ServiceTranslationService 
         this.languageService = languageService;
     }
 
+//    @Override
+//    public List<ServiceLocalizedDto> getServiceLocalizedDtoList(List<ServiceDto> serviceDtoList) {
+//
+//        log.info("Retrieving localized services");
+//        List<Long> serviceIds = serviceDtoList.stream()
+//                .map(ServiceDto::getId)
+//                .toList();
+//
+//        LanguageDto languageDto = LanguageContextHolder.getLanguage();
+//
+//        // Get translations for current language
+//        List<ServiceTranslation> translations = serviceTranslationRepository
+//                .findByServiceIdInAndLanguageId(serviceIds, languageDto.getId());
+//
+//        // Create a map for quick lookup of translations by service ID
+//        Map<Long, ServiceTranslation> translationMap = translations.stream()
+//                .collect(Collectors.toMap(tr -> tr.getService().getId(), Function.identity()));
+//
+//        // Fallback for missing translations
+//        List<Long> missingIds = serviceIds.stream()
+//                .filter(id -> !translationMap.containsKey(id))
+//                .toList();
+//
+//        List<ServiceTranslation> fallbackTranslations = serviceTranslationRepository
+//                .findByServiceIdInAndLanguageId(missingIds, languageService.getGlobalLanguage().getId());
+//
+//        // Combine DTOs with translations
+//        List<ServiceLocalizedDto> localizedDtos = serviceDtoList.stream()
+//                .map(dto -> {
+//                    ServiceTranslation tr = translationMap.getOrDefault(dto.getId(), null);
+//                    if (tr == null) {
+//                        tr = fallbackTranslations.stream()
+//                                .filter(fb -> fb.getService().getId().equals(dto.getId()))
+//                                .findFirst()
+//                                .orElse(null);
+//                    }
+//                    return ServiceMapper.toLocalizedDto(dto, tr);
+//                })
+//                .toList();
+//        log.info("Retrieved {} localized service DTOs for language: {}", localizedDtos.size(), languageDto.getLocale());
+//        return localizedDtos;
+//    }
+
+
     @Override
     public List<ServiceLocalizedDto> getServiceLocalizedDtoList(List<ServiceDto> serviceDtoList) {
+        log.info("Retrieving localized services");
+
+        List<Long> serviceIds = serviceDtoList.stream()
+                .map(ServiceDto::getId)
+                .collect(Collectors.toList());
 
         LanguageDto languageDto = LanguageContextHolder.getLanguage();
 
-        log.info("Retrieving localized services for language: {}", languageDto.getLocale());
-        List<Long> serviceIds = serviceDtoList.stream()
-                .map(ServiceDto::getId)
-                .toList();
-
-        // Get translations for current language
         List<ServiceTranslation> translations = serviceTranslationRepository
                 .findByServiceIdInAndLanguageId(serviceIds, languageDto.getId());
 
-        // Create a map for quick lookup of translations by service ID
         Map<Long, ServiceTranslation> translationMap = translations.stream()
                 .collect(Collectors.toMap(tr -> tr.getService().getId(), Function.identity()));
 
-        // Fallback for missing translations
         List<Long> missingIds = serviceIds.stream()
                 .filter(id -> !translationMap.containsKey(id))
-                .toList();
+                .collect(Collectors.toList());
 
+        long fallbackLanguageId = languageService.getGlobalLanguage().getId();
         List<ServiceTranslation> fallbackTranslations = serviceTranslationRepository
-                .findByServiceIdInAndLanguageId(missingIds, languageService.getGlobalLanguage().getId());
+                .findByServiceIdInAndLanguageId(missingIds, fallbackLanguageId);
 
-        // Combine DTOs with translations
+        Map<Long, ServiceTranslation> fallbackMap = fallbackTranslations.stream()
+                .collect(Collectors.toMap(ft -> ft.getService().getId(), Function.identity()));
+
         List<ServiceLocalizedDto> localizedDtos = serviceDtoList.stream()
                 .map(dto -> {
-                    ServiceTranslation tr = translationMap.getOrDefault(dto.getId(), null);
+                    ServiceTranslation tr = translationMap.get(dto.getId());
                     if (tr == null) {
-                        tr = fallbackTranslations.stream()
-                                .filter(fb -> fb.getService().getId().equals(dto.getId()))
-                                .findFirst()
-                                .orElse(null);
+                        tr = fallbackMap.get(dto.getId());
                     }
                     return ServiceMapper.toLocalizedDto(dto, tr);
                 })
-                .toList();
+                .collect(Collectors.toList());
+
         log.info("Retrieved {} localized service DTOs for language: {}", localizedDtos.size(), languageDto.getLocale());
         return localizedDtos;
     }
@@ -91,11 +132,53 @@ public class ServiceTranslationServiceImpl implements ServiceTranslationService 
                     .orElse(null);
             if (translation == null) {
                 log.error("No fallback translation found for service ID: {}", serviceId);
-               throw new ResourceNotFoundException("No translation found for service ID: " + serviceId);
+                throw new ResourceNotFoundException("No translation found for service ID: " + serviceId);
             }
         }
 
         log.info("Retrieved translation for service ID: {}", serviceId);
         return translation;
     }
+
+    @Override
+    public List<ServiceTranslation> getTranslationByServiceIdList(List<Long> serviceIds) {
+        if (serviceIds == null || serviceIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        LanguageDto currentLanguage = LanguageContextHolder.getLanguage();
+        Long currentLangId = currentLanguage.getId();
+        Long fallbackLangId = languageService.getGlobalLanguage().getId();
+
+        // Fetch both current and fallback translations in a single query
+        List<ServiceTranslation> allTranslations = serviceTranslationRepository
+                .findByServiceIdInAndLanguageIdIn(serviceIds, List.of(currentLangId, fallbackLangId));
+
+        // Build map: prefer current language, fallback if not found
+        Map<Long, ServiceTranslation> translationMap = new HashMap<>();
+        for (ServiceTranslation tr : allTranslations) {
+            Long serviceId = tr.getService().getId();
+
+            // Prioritize current language translation
+            if (!translationMap.containsKey(serviceId) || tr.getLanguage().getId().equals(currentLangId)) {
+                translationMap.put(serviceId, tr);
+            }
+        }
+
+        // Log missing service IDs
+        List<Long> missingIds = serviceIds.stream()
+                .filter(id -> !translationMap.containsKey(id))
+                .collect(Collectors.toList());
+
+        if (!missingIds.isEmpty()) {
+            log.warn("No translations found (even fallback) for service IDs: {}", missingIds);
+        }
+
+        // Preserve order and filter nulls
+        return serviceIds.stream()
+                .map(translationMap::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
 }

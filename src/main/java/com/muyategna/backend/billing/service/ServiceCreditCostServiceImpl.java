@@ -22,10 +22,12 @@ public class ServiceCreditCostServiceImpl implements ServiceCreditCostService {
     }
 
     @Cacheable(value = CacheConstants.CACHE_BILLING,
-            key = "T(com.muyategna.backend.redis.BillingCacheKeyUtil).getServiceCreditCostKey(#serviceId)")
+            key = "T(com.muyategna.backend.redis.BillingCacheKeyUtil).getServiceCreditCostKey(#serviceId)",
+            unless = "#result == null"
+    )
     @Override
     public ServiceCreditCostDto findByServiceId(Long serviceId) {
-       log.info("Retrieving service credit cost for service with ID: {}", serviceId);
+        log.info("Retrieving service credit cost for service with ID: {}", serviceId);
         return serviceCreditCostRepository.findByServiceId(serviceId)
                 .map(ServiceCreditCostMapper::toDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Service credit cost not found for service ID: " + serviceId));

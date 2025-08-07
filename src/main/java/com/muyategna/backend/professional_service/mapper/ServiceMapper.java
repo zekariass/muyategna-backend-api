@@ -21,6 +21,7 @@ public final class ServiceMapper {
                 .serviceCategoryId(service.getServiceCategory().getId())
                 .name(service.getName())
                 .description(service.getDescription())
+                .deliveryMode(service.getDeliveryMode())
                 .createdAt(service.getCreatedAt())
                 .updatedAt(service.getUpdatedAt())
                 .build();
@@ -41,6 +42,7 @@ public final class ServiceMapper {
         service.setServiceCategory(serviceCategory);
         service.setName(serviceDto.getName());
         service.setDescription(serviceDto.getDescription());
+        service.setDeliveryMode(serviceDto.getDeliveryMode());
         service.setCreatedAt(serviceDto.getCreatedAt());
         return service;
     }
@@ -72,6 +74,7 @@ public final class ServiceMapper {
                 .serviceCategoryId(service.getServiceCategoryId())
                 .name(serviceTranslation.getName())
                 .description(serviceTranslation.getDescription())
+                .deliveryMode(service.getDeliveryMode())
                 .createdAt(service.getCreatedAt())
                 .updatedAt(service.getUpdatedAt())
                 .build();
@@ -91,6 +94,7 @@ public final class ServiceMapper {
         return ServiceMinimalLocalizedDto.builder()
                 .id(service.getId())
                 .name(serviceTranslation.getName())
+                .deliveryMode(service.getDeliveryMode())
                 .build();
     }
 
@@ -109,6 +113,7 @@ public final class ServiceMapper {
                 .serviceCategoryId(service.getServiceCategory().getId())
                 .name(serviceTranslation.getName())
                 .description(serviceTranslation.getDescription())
+                .deliveryMode(service.getDeliveryMode())
                 .createdAt(service.getCreatedAt())
                 .updatedAt(service.getUpdatedAt())
                 .build();

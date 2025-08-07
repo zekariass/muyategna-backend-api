@@ -64,7 +64,8 @@ public class CountryFilter extends OncePerRequestFilter {
 
             // Set the resolved country in the CountryContextHolder
             CountryContextHolder.setCountry(resolvedCountry);
-            log.info("Resolved country of request is: {}", resolvedCountry);
+            assert resolvedCountry != null;
+            log.info("Resolved country of request is: {}", resolvedCountry.getName());
 
             // Proceed with the request
             filterChain.doFilter(request, response);

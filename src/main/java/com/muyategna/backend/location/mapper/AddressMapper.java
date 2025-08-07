@@ -5,6 +5,7 @@ import com.muyategna.backend.location.dto.address.AddressDto;
 import com.muyategna.backend.location.dto.address.AddressFlatDto;
 import com.muyategna.backend.location.dto.address.AddressUpdateDto;
 import com.muyategna.backend.location.entity.*;
+import com.muyategna.backend.location.utils.H3Utils;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
@@ -38,6 +39,9 @@ public final class AddressMapper {
                 .postalCode(address.getPostalCode())
                 .latitude(address.getGeoPoint().getY())
                 .longitude(address.getGeoPoint().getX())
+                .h3IndexRes7(address.getH3IndexRes7())
+                .h3IndexRes8(address.getH3IndexRes8())
+                .h3IndexRes9(address.getH3IndexRes9())
                 .fullAddress(address.getFullAddress())
                 .createdAt(address.getCreatedAt())
                 .build();
@@ -105,12 +109,21 @@ public final class AddressMapper {
         address.setStreet(addressDto.getStreet());
         address.setLandmark(addressDto.getLandmark());
         address.setPostalCode(addressDto.getPostalCode());
+        address.setH3IndexRes7(
+                H3Utils.h3ToString(H3Utils.latLngToCellRes7(addressDto.getLatitude(), addressDto.getLongitude()))
+        );
+        address.setH3IndexRes8(
+                H3Utils.h3ToString(H3Utils.latLngToCellRes8(addressDto.getLatitude(), addressDto.getLongitude()))
+        );
+        address.setH3IndexRes9(
+                H3Utils.h3ToString(H3Utils.latLngToCellRes9(addressDto.getLatitude(), addressDto.getLongitude()))
+        );
 
         if (addressDto.getLatitude() != null && addressDto.getLongitude() != null) {
             address.setGeoPoint(createPoint(addressDto.getLatitude(), addressDto.getLongitude()));
-        }else if (subCityOrDivision != null && subCityOrDivision.getGeoPoint() != null) {
+        } else if (subCityOrDivision != null && subCityOrDivision.getGeoPoint() != null) {
             address.setGeoPoint(subCityOrDivision.getGeoPoint());
-        }else if (city != null && city.getGeoPoint() != null) {
+        } else if (city != null && city.getGeoPoint() != null) {
             address.setGeoPoint(city.getGeoPoint());
         } else if (region != null && region.getGeoPoint() != null) {
             address.setGeoPoint(region.getGeoPoint());
@@ -142,13 +155,22 @@ public final class AddressMapper {
         address.setLandmark(addressDto.getLandmark());
         address.setPostalCode(addressDto.getPostalCode());
         address.setIsDefaultGeoPoint(true);
+        address.setH3IndexRes7(
+                H3Utils.h3ToString(H3Utils.latLngToCellRes7(addressDto.getLatitude(), addressDto.getLongitude()))
+        );
+        address.setH3IndexRes8(
+                H3Utils.h3ToString(H3Utils.latLngToCellRes8(addressDto.getLatitude(), addressDto.getLongitude()))
+        );
+        address.setH3IndexRes9(
+                H3Utils.h3ToString(H3Utils.latLngToCellRes9(addressDto.getLatitude(), addressDto.getLongitude()))
+        );
 
         if (addressDto.getLatitude() != null && addressDto.getLongitude() != null) {
             address.setGeoPoint(createPoint(addressDto.getLatitude(), addressDto.getLongitude()));
             address.setIsDefaultGeoPoint(false);
-        }else if (subCityOrDivision != null && subCityOrDivision.getGeoPoint() != null) {
+        } else if (subCityOrDivision != null && subCityOrDivision.getGeoPoint() != null) {
             address.setGeoPoint(subCityOrDivision.getGeoPoint());
-        }else if (city != null && city.getGeoPoint() != null) {
+        } else if (city != null && city.getGeoPoint() != null) {
             address.setGeoPoint(city.getGeoPoint());
         } else if (region != null && region.getGeoPoint() != null) {
             address.setGeoPoint(region.getGeoPoint());
@@ -193,16 +215,16 @@ public final class AddressMapper {
 
     private static String createFullAddress(Address address) {
         String fullAddress = "";
-        if (address.getLocality() != null) {
+        if (address.getLocality() != null && !address.getLocality().isEmpty()) {
             fullAddress += address.getLocality() + ", ";
         }
-        if (address.getStreet() != null) {
+        if (address.getStreet() != null && !address.getStreet().isEmpty()) {
             fullAddress += address.getStreet() + ", ";
         }
-        if (address.getLandmark() != null) {
+        if (address.getLandmark() != null && !address.getLandmark().isEmpty()) {
             fullAddress += address.getLandmark() + ", ";
         }
-        if (address.getPostalCode() != null) {
+        if (address.getPostalCode() != null && !address.getPostalCode().isEmpty()) {
             fullAddress += address.getPostalCode();
         }
         if (address.getSubCityOrDivision() != null) {

@@ -184,7 +184,7 @@
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-spatial</artifactId>
-<!--            <version>6.6.13.Final</version>-->
+            <!--            <version>6.6.13.Final</version>-->
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.locationtech.jts/jts-core -->
         <dependency>
@@ -239,12 +239,12 @@
             <scope>test</scope>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-docker-compose</artifactId>-->
-<!--            <scope>runtime</scope>-->
-<!--            <optional>true</optional>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.boot</groupId>-->
+        <!--            <artifactId>spring-boot-docker-compose</artifactId>-->
+        <!--            <scope>runtime</scope>-->
+        <!--            <optional>true</optional>-->
+        <!--        </dependency>-->
 
 
         <!-- https://mvnrepository.com/artifact/software.amazon.awssdk/s3 -->
@@ -263,11 +263,11 @@
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/io.github.cdimascio/dotenv-java -->
-<!--        <dependency>-->
-<!--            <groupId>io.github.cdimascio</groupId>-->
-<!--            <artifactId>dotenv-java</artifactId>-->
-<!--            <version>3.2.0</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.github.cdimascio</groupId>-->
+        <!--            <artifactId>dotenv-java</artifactId>-->
+        <!--            <version>3.2.0</version>-->
+        <!--        </dependency>-->
 
         <!-- https://mvnrepository.com/artifact/me.paulschwarz/spring-dotenv -->
         <dependency>
@@ -277,6 +277,36 @@
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-jsr310 -->
+
+        <!-- https://mvnrepository.com/artifact/software.amazon.awssdk/ses -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>ses</artifactId>
+            <!--            <version>2.32.7</version>-->
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-freemarker</artifactId>
+        </dependency>
+
+
+        <!-- H3 LIBRARY FOR EFFICIENT SPATIAL QUERIES-->
+        <!-- ADD h3_index IN ADDRESS TABLE-->
+        <!-- https://mvnrepository.com/artifact/com.uber/h3 -->
+        <dependency>
+            <groupId>com.uber</groupId>
+            <artifactId>h3</artifactId>
+            <version>4.1.1</version>
+        </dependency>
+
+
+        <!--        PAYMENTS-->
+        <dependency>
+            <groupId>io.github.yaphet17</groupId>
+            <artifactId>Chapa</artifactId>
+            <version>1.2.2</version>
+        </dependency>
 
     </dependencies>
 
@@ -288,6 +318,14 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>2.19.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>2.32.7</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

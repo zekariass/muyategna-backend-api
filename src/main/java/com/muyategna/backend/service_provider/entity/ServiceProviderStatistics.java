@@ -59,6 +59,15 @@ public class ServiceProviderStatistics {
     @Column(name = "monthly_claim_count", nullable = false)
     private Integer monthlyClaimCount = 0;
 
+    @Column(name = "total_new_job_notifs", nullable = false)
+    private Integer totalNewJobNotifs = 0;
+
+    @Column(name = "daily_new_job_notifs", nullable = false)
+    private Integer dailyNewJobNotifs = 0;
+
+    @Column(name = "weekly_new_job_notifs", nullable = false)
+    private Integer weeklyNewJobNotifs = 0;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -68,3 +77,4 @@ public class ServiceProviderStatistics {
     private LocalDateTime updatedAt;
 
 }
+

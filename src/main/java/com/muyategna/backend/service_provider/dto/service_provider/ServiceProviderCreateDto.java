@@ -51,10 +51,12 @@ public class ServiceProviderCreateDto {
     private Integer yearsOfExperience;
 
     @NotBlank(message = "Business email is required")
-    private String businessEmail ;
+    private String businessEmail;
 
     @NotBlank(message = "Business phone is required")
     private String businessPhone;
+
+    private Long defaultLanguageId;
 
 
     @NotNull(message = "Service Provider Tax Info is required")

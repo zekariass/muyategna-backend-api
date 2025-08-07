@@ -1,8 +1,8 @@
 package com.muyategna.backend.system.exception;
 
 import com.muyategna.backend.common.ApiResponse;
-import com.muyategna.backend.job_request.exception.NoValidSubscriptionOrCreditFoundException;
-import com.muyategna.backend.job_request.exception.ServiceNotSubscribedException;
+import com.muyategna.backend.job_request.exception.*;
+import com.muyategna.backend.messaging.notification.exception.NotificationSendingException;
 import com.muyategna.backend.user.exception.DuplicateUserException;
 import com.muyategna.backend.user.exception.UserCreationException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -177,6 +177,27 @@ public class GlobalExceptionHandler {
         return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(NotificationSendingException.class)
+    public ResponseEntity<ApiResponse<Object>> handleEmailSendingException(NotificationSendingException ex, HttpServletRequest request) {
+        return buildApiResponse(null, HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(JobLeadClaimStateInvalidException.class)
+    public ResponseEntity<ApiResponse<Object>> handleJobLeadClaimStateInvalidException(JobLeadClaimStateInvalidException ex, HttpServletRequest request) {
+        return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(JobRequestStateInvalidException.class)
+    public ResponseEntity<ApiResponse<Object>> handleJobRequestStateInvalidException(JobRequestStateInvalidException ex, HttpServletRequest request) {
+        return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+
+    @ExceptionHandler(JobQuoteStateInvalidException.class)
+    public ResponseEntity<ApiResponse<Object>> handleJobQuoteStateInvalidException(JobQuoteStateInvalidException ex, HttpServletRequest request) {
+        return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolationException(DataIntegrityViolationException ex, HttpServletRequest request) {
 //        return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);
@@ -184,7 +205,7 @@ public class GlobalExceptionHandler {
         String rootMessage = getRootCauseMessage(ex);
 
         if (rootMessage.contains("uq_") || rootMessage.contains("duplicate")) {
-            return buildApiResponse(null, HttpStatus.CONFLICT, "Duplicate key value violates unique constraint", request);
+            return buildApiResponse(null, HttpStatus.CONFLICT, rootMessage, request);
         }
 
         // Fallback for other data integrity violations

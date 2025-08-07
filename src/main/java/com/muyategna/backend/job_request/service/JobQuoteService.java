@@ -10,9 +10,19 @@ import java.util.List;
 public interface JobQuoteService {
     JobQuote createJobQuote(JobQuoteCreateDto jobQuoteCreateDto, JobLeadClaim jobLeadClaim);
 
-    JobQuoteDto createNewJobQuoteAfterClaim(JobQuoteCreateDto jobQuoteCreateDto, Long serviceProviderId);
+    JobQuoteDto createJobQuoteAfterClaim(JobQuoteCreateDto jobQuoteCreateDto, Long serviceProviderId);
 
-    List<JobQuoteDto> getJobQuotesByClaimIdAndServiceProviderId(Long claimId, Long serviceProviderId);
+//    List<JobQuoteDto> getJobQuotesByClaimIdAndServiceProviderId(Long claimId, Long serviceProviderId);
 
     void requestRequote(Long leadClaimId);
+
+    List<JobQuoteDto> getJobQuotesByLeadClaimIdForServiceProvider(Long leadClaimId, Long serviceProviderId);
+
+    List<JobQuoteDto> getJobQuotesByLeadClaimIdForCustomer(Long leadClaimId);
+
+    void acceptJobQuote(Long quoteId);
+
+    void rejectJobQuote(Long quoteId, String customerFeedback);
+
+    void withdrawJobQuote(Long quoteId);
 }

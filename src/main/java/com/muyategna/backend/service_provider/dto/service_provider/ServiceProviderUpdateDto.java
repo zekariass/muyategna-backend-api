@@ -44,7 +44,9 @@ public class ServiceProviderUpdateDto {
     private Boolean isActive;
 
     @NotBlank(message = "Business address is required")
-    private String businessEmail ;
+    private String businessEmail;
+
+    private Long defaultLanguageId;
 
     @NotBlank(message = "Business phone is required")
     private String businessPhone;

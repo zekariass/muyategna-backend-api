@@ -1,7 +1,9 @@
 package com.muyategna.backend.service_provider.service;
 
+import com.muyategna.backend.billing.service.ServiceProviderWalletService;
 import com.muyategna.backend.common.entity.LegalDocument;
 import com.muyategna.backend.common.service.LegalDocumentService;
+import com.muyategna.backend.job_request.entity.JobLead;
 import com.muyategna.backend.job_request.exception.ServiceNotSubscribedException;
 import com.muyategna.backend.location.dto.address.AddressCreateDto;
 import com.muyategna.backend.location.entity.Address;
@@ -9,6 +11,7 @@ import com.muyategna.backend.location.mapper.CountryMapper;
 import com.muyategna.backend.location.service.AddressService;
 import com.muyategna.backend.professional_service.service.ServiceService;
 import com.muyategna.backend.redis.CacheConstants;
+import com.muyategna.backend.service_provider.dto.service_provider.NearbyServiceProviderListDto;
 import com.muyategna.backend.service_provider.dto.service_provider.ServiceProviderCreateDto;
 import com.muyategna.backend.service_provider.dto.service_provider.ServiceProviderDto;
 import com.muyategna.backend.service_provider.dto.service_provider.ServiceProviderUpdateDto;
@@ -23,7 +26,8 @@ import com.muyategna.backend.service_provider.mapper.ServiceProviderServiceMappe
 import com.muyategna.backend.service_provider.mapper.ServiceProviderTaxInfoMapper;
 import com.muyategna.backend.service_provider.repository.ServiceProviderRepository;
 import com.muyategna.backend.service_provider.repository.ServiceProviderServiceRepository;
-import com.muyategna.backend.service_provider.repository.projection.ServiceProviderServiceWithDistanceProjection;
+import com.muyategna.backend.service_provider.repository.projection.NearbyServiceProviderForAJobProjection;
+import com.muyategna.backend.service_provider.repository.projection.ProviderServiceStatProjection;
 import com.muyategna.backend.system.context.CountryContextHolder;
 import com.muyategna.backend.system.exception.ResourceNotFoundException;
 import com.muyategna.backend.user.AuthUtils;
@@ -54,6 +58,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderServiceInterfa
     private final ServiceEmployeeService serviceEmployeeService;
     private final ServiceProviderRoleService serviceProviderRoleService;
     private final ServiceEmployeeRoleService serviceEmployeeRoleService;
+    private final ServiceProviderWalletService walletService;
 
     public ServiceProviderServiceImpl(ServiceProviderServiceRepository serviceProviderServiceRepository, ServiceProviderRepository serviceProviderRepository,
                                       ServiceProviderServiceService serviceProviderServiceService,
@@ -64,7 +69,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderServiceInterfa
                                       UserProfileRepository userProfileRepository,
                                       ServiceEmployeeService serviceEmployeeService,
                                       ServiceProviderRoleService serviceProviderRoleService,
-                                      ServiceEmployeeRoleService serviceEmployeeRoleService) {
+                                      ServiceEmployeeRoleService serviceEmployeeRoleService, ServiceProviderWalletService walletService) {
         this.serviceProviderServiceRepository = serviceProviderServiceRepository;
         this.serviceProviderRepository = serviceProviderRepository;
         this.serviceProviderServiceService = serviceProviderServiceService;
@@ -77,6 +82,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderServiceInterfa
         this.serviceEmployeeService = serviceEmployeeService;
         this.serviceProviderRoleService = serviceProviderRoleService;
         this.serviceEmployeeRoleService = serviceEmployeeRoleService;
+        this.walletService = walletService;
     }
 
     @Transactional
@@ -118,6 +124,9 @@ public class ServiceProviderServiceImpl implements ServiceProviderServiceInterfa
 
         // Register the logged-in user as employee with manager role
         linkLoggedInUserAsOwnerOfTheCreatedServiceProvider(loggedInUserId, savedServiceProvider);
+
+        // Create service provider wallet for the service provider
+        walletService.createWalletForServiceProvider(savedServiceProvider);
 
         return ServiceProviderMapper.toDto(savedServiceProvider);
     }
@@ -254,14 +263,14 @@ public class ServiceProviderServiceImpl implements ServiceProviderServiceInterfa
     }
 
     @Override
-    public Set<ServiceProviderServiceWithDistanceProjection> getServiceProviderServicesByServiceAndLocation(Long serviceId, Point geoPoint, Double radius) {
-        return serviceProviderServiceRepository.findServiceProviderServicesByServiceAndLocation(serviceId, geoPoint, radius);
+    public List<com.muyategna.backend.service_provider.repository.projection.ServiceProviderServiceWithDistanceAndStatisticsProjection> getServiceProviderServicesByServiceAndLocation(Long serviceId, String deliveryMode, String geoPointWkt, Double radius, Long currentCountryId, int queryLimit) {
+        return serviceProviderServiceRepository.findServiceProviderServicesByServiceAndLocation(serviceId, deliveryMode, geoPointWkt, radius, currentCountryId, queryLimit);
 
     }
 
     @Override
-    public Set<ServiceProviderServiceWithDistanceProjection> getServiceProviderServicesByServiceAndLocation(Long id, Point geoPoint, double radius, List<Long> excludedServiceProviderIds) {
-        return serviceProviderServiceRepository.findServiceProviderServicesByServiceAndLocation(id, geoPoint, radius, excludedServiceProviderIds);
+    public Set<com.muyategna.backend.service_provider.repository.projection.ServiceProviderServiceWithDistanceAndStatisticsProjection> getServiceProviderServicesByServiceAndLocation(Long serviceId, String deliveryMode, Point geoPoint, double radius, List<Long> excludedServiceProviderIds, Long currentCountryId) {
+        return serviceProviderServiceRepository.findServiceProviderServicesByServiceAndLocation(serviceId, deliveryMode, geoPoint, radius, excludedServiceProviderIds, currentCountryId);
     }
 
     @Override
@@ -278,12 +287,52 @@ public class ServiceProviderServiceImpl implements ServiceProviderServiceInterfa
     @Override
     public ServiceProviderServiceDto getServiceProviderServiceByProviderIdAndServiceId(Long serviceProviderId, Long serviceId) {
         log.info("Checking if Service Provider with ID: {} has subscribed to Service with ID: {}", serviceProviderId, serviceId);
-        ServiceProviderServiceDto serviceProviderService = serviceProviderServiceRepository
+
+        return serviceProviderServiceRepository
                 .getServiceProviderServiceByProviderIdAndServiceIdAndIsActiveTrue(serviceProviderId, serviceId)
                 .map(ServiceProviderServiceMapper::toDto)
                 .orElseThrow(() -> new ServiceNotSubscribedException("Service Provider does not have the service with ID: " + serviceId));
+    }
 
-        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Service Provider Service: " + serviceProviderService);
-        return serviceProviderService;
+    @Override
+    public List<ServiceProvider> findServiceProvidersByIdsWithNotificationPreferences(List<Long> serviceProviderIds) {
+        log.info("Retrieving Service Providers with IDs: {}", serviceProviderIds);
+        return serviceProviderRepository.findServiceProvidersByIdsWithNotificationPreferences(serviceProviderIds);
+    }
+
+    @Override
+    public List<ProviderServiceStatProjection> getServiceProviderServicesByLocationAndService(Long serviceId, String deliveryMode, String jobRequestGeoPoint, double radiusMeters, Long countryId, int queryLimit) {
+        log.info("Retrieving Service Providers by location and service");
+        return serviceProviderServiceRepository.getServiceProviderServicesByLocationAndService(serviceId, deliveryMode, jobRequestGeoPoint, radiusMeters, countryId, queryLimit);
+    }
+
+    @Override
+    public List<NearbyServiceProviderListDto> getServiceProviderList(List<Long> rankedServiceProviderIds) {
+//        log.info("Retrieving service providers by ID: {}", rankedServiceProviderIds);
+//        List<ServiceProvider> serviceProviders = serviceProviderRepository.findAllById(rankedServiceProviderIds);
+//        log.info("Retrieved service providers: {}", serviceProviders);
+//        return ServiceProviderMapper.toNearbyProviderListDto(serviceProviders);
+
+        return List.of();
+    }
+
+    @Override
+    public List<NearbyServiceProviderForAJobProjection> getNearbyServiceProvidersForCustomerView(List<Long> rankedServiceProviderIds, JobLead jobLead, String jobGeoPoint) {
+        log.info("Retrieving service providers by ID: {}", rankedServiceProviderIds);
+        List<NearbyServiceProviderForAJobProjection> serviceProvidersProjection = serviceProviderRepository.getNearbyServiceProvidersForCustomerView(rankedServiceProviderIds, jobLead.getId(), jobGeoPoint);
+        log.info("Retrieved service providers projection");
+        return serviceProvidersProjection;
+    }
+
+    @Override
+    public boolean existsActiveServiceProviderServiceByProviderIdAndServiceId(Long serviceProviderId, Long serviceId) {
+        log.info(" Checking if Service Provider with ID: {} has subscribed to Service with ID: {}", serviceProviderId, serviceId);
+        return serviceProviderServiceRepository.existsByProviderIdAndServiceIdAndIsActiveTrue(serviceProviderId, serviceId);
+    }
+
+    @Override
+    public Optional<ServiceProvider> getServiceProviderByIdWithNotificationPreference(Long providerId) {
+        log.info("Retrieving Service Provider with ID: {} with notification preferences", providerId);
+        return serviceProviderRepository.getServiceProviderByIdWithNotificationPreference(providerId);
     }
 }

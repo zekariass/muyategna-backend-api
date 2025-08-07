@@ -1,14 +1,18 @@
 package com.muyategna.backend.service_provider.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.muyategna.backend.common.entity.Language;
 import com.muyategna.backend.location.entity.Address;
 import com.muyategna.backend.location.entity.Country;
+import com.muyategna.backend.messaging.notification.entity.ServiceProviderNotificationPreference;
 import com.muyategna.backend.service_provider.enums.PortfolioType;
 import com.muyategna.backend.service_provider.enums.ServiceProviderType;
 import com.muyategna.backend.service_provider.enums.VerificationStatus;
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcType;
+import org.hibernate.annotations.Type;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -18,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "service_provider")
@@ -25,11 +30,13 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(of = "id")
+//@EqualsAndHashCode(of = "id")
 @EntityListeners(AuditingEntityListener.class)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class ServiceProvider {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(name = "business_name", nullable = false, length = 255)
@@ -95,7 +102,7 @@ public class ServiceProvider {
     private Boolean isActive = false;
     private Boolean isBlocked = false;
 
-    private String businessEmail ;
+    private String businessEmail;
     private String businessPhone;
     private String tiktok;
     private String whatsapp;
@@ -103,6 +110,23 @@ public class ServiceProvider {
     private String linkedin;
     private String instagram;
     private String website;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "default_language_id")
+    private Language defaultLanguage;
+
+    private Boolean isDeleted = false;
+    private LocalDateTime deletedAt;
+    private String deletedReason;
+
+    @Type(JsonBinaryType.class)
+    @Column(name = "extra_data", columnDefinition = "jsonb")
+    private Map<String, Object> extraData;
+
+    @OneToMany(mappedBy = "provider", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    @JsonIgnore
+    private List<ServiceProviderNotificationPreference> notificationPreferences = new ArrayList<>();
 
     @CreatedDate
     @Column(name = "registered_at", updatable = false)

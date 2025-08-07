@@ -14,25 +14,21 @@ import com.muyategna.backend.professional_service.entity.ServiceTranslation;
 import com.muyategna.backend.professional_service.mapper.ServiceMapper;
 import com.muyategna.backend.user.entity.UserProfile;
 
-import java.util.List;
-
 public final class JobRequestMapper {
 
-    public static JobRequestMinimalDto toMinimalDto(JobRequest entity) {
+    public static JobRequestMinimalDto toMinimalDto(JobRequest entity, ServiceTranslation serviceTranslation) {
         if (entity == null) {
             return null;
         }
         return JobRequestMinimalDto.builder()
                 .id(entity.getId())
-                .serviceId(entity.getService().getId())
+                .service(ServiceMapper.toMinimalLocalizedDto(entity.getService(), serviceTranslation))
                 .customerId(entity.getCustomer().getId())
                 .description(entity.getDescription())
                 .budget(entity.getBudget())
                 .startTimeWindow(JobStartTimeWindowMapper.toDto(entity.getStartTimeWindow()))
                 .status(entity.getStatus())
-                .addressId(entity.getAddress().getId())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
+                .address(AddressMapper.toFlatDto(entity.getAddress()))
                 .build();
     }
 
@@ -50,6 +46,9 @@ public final class JobRequestMapper {
                 .startTimeWindow(JobStartTimeWindowMapper.toDto(entity.getStartTimeWindow()))
                 .status(entity.getStatus())
                 .addressId(entity.getAddress().getId())
+                .questionAnswers(entity.getQuestionAnswers())
+                .extraData(entity.getExtraData())
+                .deliveryMode(entity.getDeliveryMode())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
@@ -81,6 +80,8 @@ public final class JobRequestMapper {
                 .addressCreateDto(addressCreateDto)
                 .questionAnswers(jsonStringDto.parseAndGetQuestionAnswers())
                 .extraData(jsonStringDto.parseAndGetExtraData())
+                .files(jsonStringDto.getFiles())
+                .deliveryMode(jsonStringDto.getDeliveryMode())
                 .build();
     }
 
@@ -117,6 +118,8 @@ public final class JobRequestMapper {
                 .questionAnswers(jsonStringDto.parseAndGetQuestionAnswers())
                 .extraData(jsonStringDto.parseAndGetExtraData())
                 .customerId(customer.getId())
+                .files(jsonStringDto.getFiles())
+                .deliveryMode(jsonStringDto.getDeliveryMode())
                 .build();
     }
 
@@ -135,6 +138,7 @@ public final class JobRequestMapper {
                 .startTimeWindow(JobStartTimeWindowMapper.toDto(entity.getStartTimeWindow()))
                 .status(entity.getStatus())
                 .address(AddressMapper.toFlatDto(entity.getAddress()))
+                .deliveryMode(entity.getDeliveryMode())
                 .build();
     }
 
@@ -156,6 +160,7 @@ public final class JobRequestMapper {
                 .questionAnswers(entity.getQuestionAnswers())
                 .extraData(entity.getExtraData())
                 .mediaList(JobRequestMediaMapper.toMinimalDtoList(entity.getMediaList()))
+                .deliveryMode(entity.getDeliveryMode())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }
@@ -180,6 +185,7 @@ public final class JobRequestMapper {
         entity.setCreatedAt(dto.getCreatedAt());
         entity.setQuestionAnswers(dto.getQuestionAnswers());
         entity.setExtraData(dto.getExtraData());
+        entity.setDeliveryMode(dto.getDeliveryMode());
         return entity;
     }
 
@@ -202,6 +208,7 @@ public final class JobRequestMapper {
         entity.setAddress(address);
         entity.setQuestionAnswers(dto.getQuestionAnswers());
         entity.setExtraData(dto.getExtraData());
+        entity.setDeliveryMode(dto.getDeliveryMode());
         return entity;
     }
 
@@ -215,8 +222,8 @@ public final class JobRequestMapper {
         service.setId(jsonStringDto.getServiceId());
 
         JobStartTimeWindow startTimeWindow = new JobStartTimeWindow();
-        startTimeWindow.setId(jsonStringDto.getStartTimeWindowId());
 
+        startTimeWindow.setId(jsonStringDto.getStartTimeWindowId());
         entity.setId(jsonStringDto.getId());
         entity.setService(service);
         entity.setDescription(jsonStringDto.getDescription());
@@ -224,12 +231,8 @@ public final class JobRequestMapper {
         entity.setStartTimeWindow(startTimeWindow);
         entity.setQuestionAnswers(jsonStringDto.getQuestionAnswers());
         entity.setExtraData(jsonStringDto.getExtraData());
+        entity.setDeliveryMode(jsonStringDto.getDeliveryMode());
 
         return entity;
-    }
-
-
-    public static List<JobRequestMinimalDto> toMinimalDtoList(List<JobRequest> jobRequests) {
-        return jobRequests.stream().map(JobRequestMapper::toMinimalDto).toList();
     }
 }

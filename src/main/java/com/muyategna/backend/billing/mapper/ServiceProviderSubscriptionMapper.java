@@ -28,7 +28,7 @@ public final class ServiceProviderSubscriptionMapper {
                 .extraData(serviceProviderSubscription.getExtraData())
                 .isActive(serviceProviderSubscription.getIsActive())
                 .initialCredits(serviceProviderSubscription.getInitialCredits())
-                .usedCredits(serviceProviderSubscription.getUsedCredits())
+                .balance(serviceProviderSubscription.getBalance())
                 .autoRenew(serviceProviderSubscription.getAutoRenew())
                 .lastBillingDate(serviceProviderSubscription.getLastBillingDate())
                 .createdAt(serviceProviderSubscription.getCreatedAt())
@@ -56,7 +56,7 @@ public final class ServiceProviderSubscriptionMapper {
                 .extraData(serviceProviderSubscription.getExtraData())
                 .isActive(serviceProviderSubscription.getIsActive())
                 .initialCredits(serviceProviderSubscription.getInitialCredits())
-                .usedCredits(serviceProviderSubscription.getUsedCredits())
+                .balance(serviceProviderSubscription.getBalance())
                 .autoRenew(serviceProviderSubscription.getAutoRenew())
                 .lastBillingDate(serviceProviderSubscription.getLastBillingDate())
                 .createdAt(serviceProviderSubscription.getCreatedAt())
@@ -87,7 +87,7 @@ public final class ServiceProviderSubscriptionMapper {
         serviceProviderSubscription.setExtraData(serviceProviderSubscriptionDto.getExtraData());
         serviceProviderSubscription.setIsActive(serviceProviderSubscriptionDto.getIsActive());
         serviceProviderSubscription.setInitialCredits(serviceProviderSubscriptionDto.getInitialCredits());
-        serviceProviderSubscription.setUsedCredits(serviceProviderSubscriptionDto.getUsedCredits());
+        serviceProviderSubscription.setBalance(serviceProviderSubscriptionDto.getBalance());
         serviceProviderSubscription.setAutoRenew(serviceProviderSubscriptionDto.getAutoRenew());
         serviceProviderSubscription.setLastBillingDate(serviceProviderSubscriptionDto.getLastBillingDate());
         serviceProviderSubscription.setCreatedAt(serviceProviderSubscriptionDto.getCreatedAt());

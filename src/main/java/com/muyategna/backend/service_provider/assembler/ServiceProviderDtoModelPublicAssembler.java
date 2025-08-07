@@ -25,4 +25,5 @@ public class ServiceProviderDtoModelPublicAssembler {
                 .toList();
         return CollectionModel.of(serviceProviderDtoModels);
     }
+
 }

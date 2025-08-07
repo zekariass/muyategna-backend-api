@@ -49,37 +49,64 @@ public class JobQuoteServiceImpl implements JobQuoteService {
 
     @Transactional
     @Override
-    public JobQuoteDto createNewJobQuoteAfterClaim(JobQuoteCreateDto jobQuoteCreateDto, Long serviceProviderId) {
+    public JobQuoteDto createJobQuoteAfterClaim(JobQuoteCreateDto jobQuoteCreateDto, Long serviceProviderId) {
         // Check if job lead claim exists
-        JobLeadClaim jobLeadClaim = jobLeadClaimRepository.findById(jobQuoteCreateDto.getClaimId())
+        JobLeadClaim jobLeadClaim = jobLeadClaimRepository.findByIdWithQuotes(jobQuoteCreateDto.getClaimId())
                 .orElseThrow(() -> new IllegalArgumentException("Job lead claim not found"));
 
-//        // Get quotes for job lead claim for the service provider
-//        boolean claimExists = jobLeadClaimRepository.existsByJobLeadIdAndProviderId(jobLeadClaim.getId(), serviceProviderId);
-
-        if (jobLeadClaim == null) {
-            throw new IllegalArgumentException("Job lead claim does not exist");
-        }
-
-        if (jobLeadClaim.getStatus() != JobLeadClaimStatus.CLAIMED) {
-            throw new IllegalArgumentException("Job lead claim is not valid for quotes");
-        }
+        // Check if job lead claim is valid
+        validateJobLeadClaim(jobLeadClaim);
 
         // Create job quote
         JobQuote jobQuote = createJobQuote(jobQuoteCreateDto, jobLeadClaim);
+
+        // Update job lead claim
+        if (!jobLeadClaim.isQuoted()) {
+            jobLeadClaim.setStatus(JobLeadClaimStatus.QUOTED);
+            jobLeadClaimRepository.save(jobLeadClaim);
+        }
 
         // Check if
         return JobQuoteMapper.toDto(jobQuote);
     }
 
+    private static void validateJobLeadClaim(JobLeadClaim jobLeadClaim) {
+        if (jobLeadClaim == null) {
+            throw new IllegalArgumentException("Job lead claim does not exist");
+        }
 
-    @Override
-    public List<JobQuoteDto> getJobQuotesByClaimIdAndServiceProviderId(Long claimId, Long serviceProviderId) {
-        log.info("Getting job quotes by claim ID: {} and service provider ID: {}", claimId, serviceProviderId);
-        List<JobQuote> jobQuotes = jobQuoteRepository.findByClaimIdAndServiceProviderId(claimId, serviceProviderId);
-        log.info("Job quotes found: {}", jobQuotes.size());
-        return JobQuoteMapper.toDtoList(jobQuotes);
+        // Check if pending or accepted job lead claim exists
+        List<JobQuote> jobQuotes = jobLeadClaim.getQuotes();
+        for (JobQuote jobQuote : jobQuotes) {
+            if (jobQuote.isPending()) {
+                throw new IllegalArgumentException("Job lead claim already has a pending job quote. Please wait for it to be accepted or rejected and send a requote request.");
+            }
+            if (jobQuote.isAccepted()) {
+                throw new IllegalArgumentException("Job lead claim already has an accepted job quote. If you need a new requote, please reject the current quote and send a requote request.");
+            }
+        }
+
+        // Check if job lead claim is valid
+        boolean isClaimed = jobLeadClaim.isClaimed();
+        boolean isQuotedOrRejected = jobLeadClaim.isQuoted() || jobLeadClaim.isRejected();
+        boolean isRequoteRequested = jobLeadClaim.getRequoteRequested();
+
+        if (!(isClaimed || (isRequoteRequested && isQuotedOrRejected))) {
+            throw new IllegalArgumentException(
+                    "Job lead claim is not valid for creating a job quote. " +
+                            "Either it must be in CLAIMED state, or it must be in QUOTED or REJECTED state with a requote request."
+            );
+        }
     }
+
+
+//    @Override
+//    public List<JobQuoteDto> getJobQuotesByClaimIdAndServiceProviderId(Long claimId, Long serviceProviderId) {
+//        log.info("Getting job quotes by claim ID: {} and service provider ID: {}", claimId, serviceProviderId);
+//        List<JobQuote> jobQuotes = jobQuoteRepository.findByClaimIdAndServiceProviderId(claimId, serviceProviderId);
+//        log.info("Job quotes found: {}", jobQuotes.size());
+//        return JobQuoteMapper.toDtoList(jobQuotes);
+//    }
 
     @Override
     public void requestRequote(Long leadClaimId) {
@@ -118,5 +145,87 @@ public class JobQuoteServiceImpl implements JobQuoteService {
         // Ser request status to true
         jobLeadClaim.setRequoteRequested(true);
         jobLeadClaimRepository.save(jobLeadClaim);
+    }
+
+    @Override
+    public List<JobQuoteDto> getJobQuotesByLeadClaimIdForServiceProvider(Long leadClaimId, Long serviceProviderId) {
+        log.info("Getting job quotes by lead claim ID: {} and service provider ID: {}", leadClaimId, serviceProviderId);
+        List<JobQuote> jobQuotes = jobQuoteRepository.findByClaimIdAndServiceProviderId(leadClaimId, serviceProviderId);
+        log.info("Job quotes found: {}", jobQuotes.size());
+        return JobQuoteMapper.toDtoList(jobQuotes);
+    }
+
+    @Override
+    public List<JobQuoteDto> getJobQuotesByLeadClaimIdForCustomer(Long leadClaimId) {
+        log.info("Getting job quotes by lead claim ID: {} for customer", leadClaimId);
+        UserProfile customer = AuditorContextHolder.getUserProfile();
+        List<JobQuote> jobQuotes = jobQuoteRepository.findByClaimIdAndCustomerId(leadClaimId, customer.getId());
+        log.info("Job quotes found: {} for customer with ID: {}", jobQuotes.size(), customer.getId());
+        return JobQuoteMapper.toDtoList(jobQuotes);
+    }
+
+    @Override
+    public void acceptJobQuote(Long quoteId) {
+        log.info("Accepting job quote with ID: {}", quoteId);
+        JobQuote jobQuote = jobQuoteRepository.findById(quoteId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job quote with ID: " + quoteId + " not found"));
+
+        if (jobQuote.isAccepted()) {
+            throw new IllegalArgumentException("Job quote is already accepted");
+        }
+
+        if (jobQuote.isWithdrawn()) {
+            throw new IllegalArgumentException("Job quote is already withdrawn by service provider");
+        }
+
+        jobQuote.setStatus(JobQuoteStatus.ACCEPTED);
+        jobQuote.setCustomerFeedback(null);
+        jobQuoteRepository.save(jobQuote);
+
+        // TODO: Send notification to customer
+    }
+
+    @Override
+    public void rejectJobQuote(Long quoteId, String customerFeedback) {
+        log.info("Rejecting job quote with ID: {}", quoteId);
+        JobQuote jobQuote = jobQuoteRepository.findById(quoteId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job quote with ID: " + quoteId + " not found"));
+
+        if (jobQuote.isAccepted()) {
+            throw new IllegalArgumentException("Job quote is already accepted");
+        }
+
+        if (jobQuote.isWithdrawn()) {
+            throw new IllegalArgumentException("Job quote is already withdrawn by service provider");
+        }
+
+        jobQuote.setStatus(JobQuoteStatus.REJECTED);
+        jobQuote.setCustomerFeedback(customerFeedback);
+        jobQuoteRepository.save(jobQuote);
+
+        // TODO: Send notification to customer
+
+    }
+
+    @Override
+    public void withdrawJobQuote(Long quoteId) {
+        log.info("Withdrawing job quote with ID: {}", quoteId);
+
+        UserProfile serviceProvider = AuditorContextHolder.getUserProfile();
+        JobQuote jobQuote = jobQuoteRepository.findByQuoteIdAndCustomerId(quoteId, serviceProvider.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Job quote with ID: " + quoteId + " not found"));
+
+        if (jobQuote.isRejected()) {
+            throw new IllegalArgumentException("Job quote is already rejected by customer. You can not withdraw it");
+        }
+
+        if (jobQuote.isWithdrawn()) {
+            throw new IllegalArgumentException("Job quote is already withdrawn by service provider");
+        }
+
+        jobQuote.setStatus(JobQuoteStatus.WITHDRAWN);
+        jobQuoteRepository.save(jobQuote);
+
+        // TODO: Send notification to customer
     }
 }

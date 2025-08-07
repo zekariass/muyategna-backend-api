@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -45,8 +46,22 @@ public class ServiceProviderStatisticsServiceImpl implements ServiceProviderStat
 
 
     @Override
+    public ServiceProviderStatistics createStatisticsWithoutSave(Long serviceProviderId) {
+        ServiceProviderStatistics statistics = new ServiceProviderStatistics();
+        ServiceProvider serviceProvider = new ServiceProvider();
+        serviceProvider.setId(serviceProviderId);
+
+        statistics.setProvider(serviceProvider);
+        statistics.setAvgRating(BigDecimal.ZERO);
+        statistics.setCompletedLeads(0);
+
+        return statistics;
+    }
+
+
+    @Override
     public void updateStatisticsForNewLeadAssignment(Long serviceProviderId) {
-        ServiceProviderStatistics statistics = serviceProviderStatisticsRepository.findByProviderId(serviceProviderId);
+        ServiceProviderStatistics statistics = serviceProviderStatisticsRepository.findByProviderIdWithProvider(serviceProviderId);
 //        statistics.setTotalLeads(statistics.getTotalLeads() + 1);
 //        statistics.setDayLeadLoad(statistics.getDayLeadLoad() + 1);
 //        statistics.setWeekLeadLoad(statistics.getWeekLeadLoad() + 1);
@@ -55,5 +70,11 @@ public class ServiceProviderStatisticsServiceImpl implements ServiceProviderStat
 //        statistics.setMonthLeadLoad(statistics.getMonthLeadLoad() + 1);
 
         serviceProviderStatisticsRepository.save(statistics);
+    }
+
+    @Override
+    public List<ServiceProviderStatistics> getServiceProviderStatisticsByServiceProviderIds(List<Long> serviceProviderIds) {
+        log.info("Getting statistics for Service Providers with IDs: {}", serviceProviderIds);
+        return serviceProviderStatisticsRepository.findAllByServiceProviderIds(serviceProviderIds);
     }
 }

@@ -11,4 +11,6 @@ public interface ServiceTranslationService {
     List<ServiceLocalizedDto> getServiceLocalizedDtoList(List<ServiceDto> serviceDtoList);
 
     ServiceTranslation getTranslationByServiceId(Long id);
+
+    List<ServiceTranslation> getTranslationByServiceIdList(List<Long> serviceIdsForTranslation);
 }

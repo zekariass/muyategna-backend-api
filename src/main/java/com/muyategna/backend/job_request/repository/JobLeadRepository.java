@@ -71,49 +71,49 @@ public interface JobLeadRepository extends JpaRepository<JobLead, Long> {
 //    );
 
     @Query(value = """
-    SELECT 
-        jl.id AS id,
-        jl.job_request_id AS jobRequestId,
-        jl.status AS status,
-        jl.max_claims AS maxClaims,
-        jl.claimed_count AS claimedCount,
-        jl.created_at AS createdAt,
-        ST_Distance(ad.geo_point::geography, cast(:geoPoint AS geography)) AS distanceMeters
-    FROM job_lead jl
-    JOIN job_request jr ON jl.job_request_id = jr.id
-    JOIN address ad ON jr.address_id = ad.address_id
-    LEFT JOIN job_lead_claim jlc 
-        ON jlc.job_lead_id = jl.id AND jlc.provider_id = :serviceProviderId
-    WHERE 
-        (jl.status = 'OPEN' OR jl.status = 'CLAIMED_PARTIALLY')
-        AND jl.max_claims > jl.claimed_count
-        AND jr.service_id IN :serviceIds
-        AND ST_DWithin(
-            ad.geo_point::geography, 
-            cast(:geoPoint AS geography), 
-            :maxTravelDistanceInMeters
-        )
-        AND (jr.status = 'OPEN' OR jr.status = 'REOPEN')
-        AND jlc.id IS NULL
-    """,
+            SELECT 
+                jl.id AS id,
+                jl.job_request_id AS jobRequestId,
+                jl.status AS status,
+                jl.max_claims AS maxClaims,
+                jl.claimed_count AS claimedCount,
+                jl.created_at AS createdAt,
+                ST_Distance(ad.geo_point::geography, cast(:geoPoint AS geography)) AS distanceMeters
+            FROM job_lead jl
+            JOIN job_request jr ON jl.job_request_id = jr.id
+            JOIN address ad ON jr.address_id = ad.address_id
+            LEFT JOIN job_lead_claim jlc 
+                ON jlc.job_lead_id = jl.id AND jlc.provider_id = :serviceProviderId
+            WHERE 
+                (jl.status = 'OPEN' OR jl.status = 'CLAIMED_PARTIALLY')
+                AND jl.max_claims > jl.claimed_count
+                AND jr.service_id IN :serviceIds
+                AND ST_DWithin(
+                    ad.geo_point::geography, 
+                    cast(:geoPoint AS geography), 
+                    :maxTravelDistanceInMeters
+                )
+                AND (jr.status = 'OPEN' OR jr.status = 'REOPEN')
+                AND jlc.id IS NULL
+            """,
             countQuery = """
-    SELECT COUNT(*) FROM job_lead jl
-    JOIN job_request jr ON jl.job_request_id = jr.id
-    JOIN address ad ON jr.address_id = ad.address_id
-    LEFT JOIN job_lead_claim jlc 
-        ON jlc.job_lead_id = jl.id AND jlc.provider_id = :serviceProviderId
-    WHERE 
-        (jl.status = 'OPEN' OR jl.status = 'CLAIMED_PARTIALLY')
-        AND jl.max_claims > jl.claimed_count
-        AND jr.service_id IN :serviceIds
-        AND ST_DWithin(
-            ad.geo_point::geography, 
-            cast(:geoPoint AS geography), 
-            :maxTravelDistanceInMeters
-        )
-        AND (jr.status = 'OPEN' OR jr.status = 'REOPEN')
-        AND jlc.id IS NULL
-    """,
+                    SELECT COUNT(DISTINCT jl.id) FROM job_lead jl
+                    JOIN job_request jr ON jl.job_request_id = jr.id
+                    JOIN address ad ON jr.address_id = ad.address_id
+                    LEFT JOIN job_lead_claim jlc 
+                        ON jlc.job_lead_id = jl.id AND jlc.provider_id = :serviceProviderId
+                    WHERE 
+                        (jl.status = 'OPEN' OR jl.status = 'CLAIMED_PARTIALLY')
+                        AND jl.max_claims > jl.claimed_count
+                        AND jr.service_id IN :serviceIds
+                        AND ST_DWithin(
+                            ad.geo_point::geography, 
+                            cast(:geoPoint AS geography), 
+                            :maxTravelDistanceInMeters
+                        )
+                        AND (jr.status = 'OPEN' OR jr.status = 'REOPEN')
+                        AND jlc.id IS NULL
+                    """,
             nativeQuery = true
     )
     Page<JobLeadProjection> findAllOpenLeadsByServiceIdIn(
@@ -125,12 +125,37 @@ public interface JobLeadRepository extends JpaRepository<JobLead, Long> {
     );
 
 
+    @Query("""
+            SELECT jl FROM JobLead jl
+            JOIN FETCH jl.jobRequest jr
+            JOIN FETCH jr.service
+            JOIN FETCH jr.address
+            WHERE jl.id = :id
+            """)
+    Optional<JobLead> findByIdWithRelatedEntities(@Param("id") Long id);
+
 
     @Query("""
-        SELECT jl FROM JobLead jl
-        JOIN FETCH jl.jobRequest jr
-        JOIN FETCH jr.service
-        WHERE jl.id = :id
-        """)
-    Optional<JobLead> findWithRequestAndService(@Param("id") Long id);
+            SELECT jl FROM JobLead jl
+            JOIN FETCH jl.jobRequest jr
+            JOIN FETCH jr.service
+            JOIN FETCH jr.address
+            WHERE jl.id = :id
+            """)
+    Optional<JobLead> findByIdWithClaimsAndRelatedEntities(@Param("id") Long id);
+
+
+    Optional<JobLead> findByJobRequestId(Long jobRequestId);
+
+
+    // There is only one open or claimed partially lead per job request enforced in db
+    @Query("""
+            SELECT DISTINCT jl FROM JobLead jl
+            JOIN FETCH jl.jobRequest jr
+            JOIN FETCH jr.service
+            JOIN FETCH jr.address
+            JOIN FETCH jl.claims
+            WHERE jr.id = :jobRequestId AND jl.status IN ('OPEN', 'CLAIMED_PARTIALLY') 
+            """)
+    Optional<JobLead> findLeadByJobRequestIdWithClaimsAndRelatedEntities(Long jobRequestId);
 }

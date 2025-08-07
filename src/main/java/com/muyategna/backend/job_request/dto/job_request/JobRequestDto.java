@@ -1,5 +1,6 @@
 package com.muyategna.backend.job_request.dto.job_request;
 
+import com.muyategna.backend.common.enums.ServiceDeliveryMode;
 import com.muyategna.backend.job_request.dto.job_start_time_window.JobStartTimeWindowDto;
 import com.muyategna.backend.job_request.enums.JobStatus;
 import lombok.AllArgsConstructor;
@@ -27,6 +28,7 @@ public class JobRequestDto {
     private Long addressId;
     private List<Map<String, Object>> questionAnswers;
     private Map<String, Object> extraData;
+    private ServiceDeliveryMode deliveryMode;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -17,6 +17,7 @@ public final class ServiceProviderServiceMapper {
                 .serviceId(entity.getService().getId())
                 .providerId(entity.getProvider().getId())
                 .isActive(entity.getIsActive())
+                .deliveryMode(entity.getDeliveryMode())
                 .linkedAt(entity.getLinkedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
@@ -29,6 +30,7 @@ public final class ServiceProviderServiceMapper {
                 .service(serviceLocalizedDto)
                 .providerId(entity.getProvider().getId())
                 .isActive(entity.getIsActive())
+                .deliveryMode(entity.getDeliveryMode())
                 .linkedAt(entity.getLinkedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
@@ -48,6 +50,7 @@ public final class ServiceProviderServiceMapper {
         entity.setUpdatedAt(dto.getUpdatedAt());
         entity.setService(service);
         entity.setProvider(provider);
+        entity.setDeliveryMode(dto.getDeliveryMode());
         return entity;
     }
 
@@ -63,6 +66,7 @@ public final class ServiceProviderServiceMapper {
         entity.setIsActive(dto.getIsActive());
         entity.setService(service);
         entity.setProvider(provider);
+        entity.setDeliveryMode(dto.getDeliveryMode());
         return entity;
     }
 
@@ -76,6 +80,7 @@ public final class ServiceProviderServiceMapper {
         ServiceProviderService entity = new ServiceProviderService();
         entity.setService(service);
         entity.setProvider(provider);
+        entity.setDeliveryMode(dto.getDeliveryMode());
         return entity;
     }
 

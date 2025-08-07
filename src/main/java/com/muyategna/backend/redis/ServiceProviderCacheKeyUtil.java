@@ -5,4 +5,8 @@ public class ServiceProviderCacheKeyUtil {
         return String.format("service_provider_service_%d_%d", serviceProviderId, serviceId);
     }
 
+    public static String getServiceProviderRankingWeightsKey() {
+        return "service_provider_ranking_weights";
+    }
+
 }

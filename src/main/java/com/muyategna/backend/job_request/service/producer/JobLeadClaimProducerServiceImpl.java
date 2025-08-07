@@ -1,7 +1,7 @@
 package com.muyategna.backend.job_request.service.producer;
 
 import com.muyategna.backend.common.Constants;
-import com.muyategna.backend.job_request.dto.job_lead.LeadAssignmentMessage;
+import com.muyategna.backend.messaging.notification.dto.queue.LeadAssignmentQueueMessage;
 import com.muyategna.backend.rabbitmq.model.QueueSpec;
 import com.muyategna.backend.service_provider.entity.ServiceProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -43,22 +43,22 @@ public class JobLeadClaimProducerServiceImpl implements JobLeadClaimProducerServ
     }
 
     @Override
-    public void enqueueServiceProviderNewLeadAssignment(LeadAssignmentMessage leadAssignmentMessage) {
+    public void enqueueServiceProviderNewLeadAssignment(LeadAssignmentQueueMessage leadAssignmentQueueMessage) {
         QueueSpec queueSpec = QueueSpec.withBaseName(Constants.JOB_LEAD_ASSIGNMENT_QUEUE_BASE_NAME);
         rabbitTemplate.convertAndSend(
                 queueSpec.exchange(),
                 queueSpec.routingKey(),
-                leadAssignmentMessage
+                leadAssignmentQueueMessage
         );
     }
 
     @Override
-    public void enqueueServiceProviderLeadReassignment(LeadAssignmentMessage leadAssignmentMessage) {
+    public void enqueueServiceProviderLeadReassignment(LeadAssignmentQueueMessage leadAssignmentQueueMessage) {
         QueueSpec queueSpec = QueueSpec.withBaseName(Constants.JOB_LEAD_REASSIGNMENT_QUEUE_BASE_NAME);
         rabbitTemplate.convertAndSend(
                 queueSpec.exchange(),
                 queueSpec.routingKey(),
-                leadAssignmentMessage
+                leadAssignmentQueueMessage
         );
 
     }

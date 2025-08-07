@@ -1,5 +1,6 @@
 package com.muyategna.backend.professional_service.dto.service;
 
+import com.muyategna.backend.common.enums.ServiceDeliveryMode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -18,4 +19,6 @@ public class ServiceCreateDto {
     @NotBlank(message = "Name is required")
     private String name;
     private String description;
+
+    private ServiceDeliveryMode deliveryMode;
 }

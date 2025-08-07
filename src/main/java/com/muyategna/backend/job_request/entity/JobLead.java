@@ -1,5 +1,6 @@
 package com.muyategna.backend.job_request.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.muyategna.backend.job_request.enums.JobLeadStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "job_lead")
@@ -41,6 +43,10 @@ public class JobLead {
 
     @Column(name = "claimed_count", nullable = false)
     private Integer claimedCount = 0;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "jobLead", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<JobLeadClaim> claims;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

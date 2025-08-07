@@ -26,13 +26,13 @@ public class ServiceProviderSubscriptionRepositoryCustomImpl implements ServiceP
     public boolean hasServiceProviderValidSubscription(Long serviceProviderId, BigDecimal subsCreditsPerLead) {
         QServiceProviderSubscription sps = QServiceProviderSubscription.serviceProviderSubscription;
 
-        BooleanExpression hasEnoughCredits = (sps.usedCredits.add(subsCreditsPerLead).loe(sps.initialCredits))
+        BooleanExpression hasEnoughCredits = (sps.balance.goe(subsCreditsPerLead))
                 .or(sps.trialPeriodEndsAt.isNotNull().and(sps.trialPeriodEndsAt.after(LocalDateTime.now())));
 
         BooleanExpression hasValidRenewalStatus = sps.renewalStatus
                 .in(RenewalStatusEnum.PENDING, RenewalStatusEnum.SUCCESSFUL);
 
-       return jpaQueryFactory.selectOne()
+        return jpaQueryFactory.selectOne()
                 .from(sps)
                 .where(sps.provider.id.eq(serviceProviderId)
                         .and(hasEnoughCredits)

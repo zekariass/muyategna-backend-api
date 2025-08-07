@@ -1,5 +1,6 @@
 package com.muyategna.backend.professional_service.dto.service;
 
+import com.muyategna.backend.common.enums.ServiceDeliveryMode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +17,7 @@ public class ServiceDto {
     private Long serviceCategoryId;
     private String name;
     private String description;
+    private ServiceDeliveryMode deliveryMode;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -11,8 +11,10 @@ public final class ServiceCreditCostMapper {
         return ServiceCreditCostDto.builder()
                 .id(serviceCreditCost.getId())
                 .serviceId(serviceCreditCost.getService().getId())
-                .paygCreditsPerLead(serviceCreditCost.getPaygCreditsPerLead())
-                .subsCreditsPerLead(serviceCreditCost.getSubsCreditsPerLead())
+                .paygClaimCostPerLead(serviceCreditCost.getPaygClaimCostPerLead())
+                .paygAcceptanceCostPerLead(serviceCreditCost.getPaygAcceptanceCostPerLead())
+                .subsClaimCostPerLead(serviceCreditCost.getSubsClaimCostPerLead())
+                .subsAcceptanceCostPerLead(serviceCreditCost.getSubsAcceptanceCostPerLead())
                 .createdAt(serviceCreditCost.getCreatedAt())
                 .updatedAt(serviceCreditCost.getUpdatedAt())
                 .build();
@@ -25,8 +27,10 @@ public final class ServiceCreditCostMapper {
         }
         ServiceCreditCost serviceCreditCost = new ServiceCreditCost();
         serviceCreditCost.setId(serviceCreditCostDto.getId());
-        serviceCreditCost.setPaygCreditsPerLead(serviceCreditCostDto.getPaygCreditsPerLead());
-        serviceCreditCost.setSubsCreditsPerLead(serviceCreditCostDto.getSubsCreditsPerLead());
+        serviceCreditCost.setPaygClaimCostPerLead(serviceCreditCostDto.getPaygClaimCostPerLead());
+        serviceCreditCost.setPaygAcceptanceCostPerLead(serviceCreditCostDto.getPaygAcceptanceCostPerLead());
+        serviceCreditCost.setSubsClaimCostPerLead(serviceCreditCostDto.getSubsClaimCostPerLead());
+        serviceCreditCost.setSubsAcceptanceCostPerLead(serviceCreditCostDto.getSubsAcceptanceCostPerLead());
         serviceCreditCost.setCreatedAt(serviceCreditCostDto.getCreatedAt());
         serviceCreditCost.setUpdatedAt(serviceCreditCostDto.getUpdatedAt());
         return serviceCreditCost;

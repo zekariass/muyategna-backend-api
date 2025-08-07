@@ -25,16 +25,23 @@ public class InviteForQuote {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lead_id", nullable = false)
-    private JobLead leadId;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "job_request_id", nullable = false)
+    private JobRequest jobRequest;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(optional = false)
     @JoinColumn(name = "provider_id", nullable = false)
-    private ServiceProvider providerId;
+    private ServiceProvider provider;
 
-    @Column(name = "viewed", nullable = false)
-    private boolean viewed;
+    @Column(nullable = false)
+    private boolean viewed = false;
+
+
+    @Column(name = "viewed_at")
+    private LocalDateTime viewedAt;
+
+    @Column(name = "accepted_at")
+    private LocalDateTime acceptedAt;
 
     @CreatedDate
     private LocalDateTime invitedAt;

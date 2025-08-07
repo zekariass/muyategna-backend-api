@@ -35,6 +35,9 @@ public class AddressDto {
 
     private Double latitude;
     private Double longitude;
+    private String h3IndexRes7;
+    private String h3IndexRes8;
+    private String h3IndexRes9;
     private String fullAddress;
     private LocalDateTime createdAt;
 }

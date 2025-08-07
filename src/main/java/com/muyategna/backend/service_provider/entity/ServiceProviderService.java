@@ -1,11 +1,14 @@
 package com.muyategna.backend.service_provider.entity;
 
+import com.muyategna.backend.common.enums.ServiceDeliveryMode;
 import com.muyategna.backend.professional_service.entity.Service;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -35,6 +38,11 @@ public class ServiceProviderService {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    private ServiceDeliveryMode deliveryMode = ServiceDeliveryMode.ONSITE;
 
     @CreatedDate
     @Column(name = "linked_at", nullable = false, updatable = false)

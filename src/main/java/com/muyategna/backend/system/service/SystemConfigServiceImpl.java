@@ -1,6 +1,5 @@
 package com.muyategna.backend.system.service;
 
-import com.muyategna.backend.common.Constants;
 import com.muyategna.backend.redis.CommonCacheKeyUtil;
 import com.muyategna.backend.system.dto.SystemConfigCreateDto;
 import com.muyategna.backend.system.dto.SystemConfigDto;
@@ -15,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -24,8 +22,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 @Service
 @Slf4j
@@ -33,7 +29,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     private final SystemConfigRepository systemConfigRepository;
     private final RedisTemplate<String, Object> systemConfigRedisTemplate;
-//    private final HashOperations <String, String, Object> hashOperations;
+    //    private final HashOperations <String, String, Object> hashOperations;
     private final static String SYSTEM_CONFIGS_KEY = CommonCacheKeyUtil.systemConfigsKey();
 
     @Value("${system.config.refresh.interval:1800000}")
@@ -104,7 +100,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             log.warn("SystemConfig not found in cache for name: {}", name);
             systemConfig = systemConfigRepository.findByName(name)
                     .orElseThrow(() -> new ResourceNotFoundException("SystemConfig not found with name: " + name));
-            systemConfigRedisTemplate.opsForHash().put(CommonCacheKeyUtil.systemConfigsKey(), name, systemConfig);
+            systemConfigRedisTemplate.opsForHash().put(SYSTEM_CONFIGS_KEY, name, systemConfig);
         }
 
         log.info("Retrieved SystemConfig with name: {}", name);
@@ -113,6 +109,12 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             throw new ResourceNotFoundException("SystemConfig not found with name: " + name);
         }
         return (SystemConfig) systemConfig;
+    }
+
+    @Override
+    public List<SystemConfig> getSystemConfigsByName(List<String> configNames) {
+        log.info("Retrieving SystemConfigs with names: {}", configNames);
+        return systemConfigRepository.findAllByNameIn(configNames);
     }
 
     /**
@@ -214,7 +216,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return SystemConfigMapper.toDto(savedSystemConfig);
     }
 
-    
+
     /**
      * Delete a system configuration by its ID.
      *

@@ -54,6 +54,15 @@ public class Address {
     @JdbcTypeCode(SqlTypes.GEOGRAPHY)
     private Point geoPoint;
 
+    @Column(name = "h3_index_res7")
+    private String h3IndexRes7;
+
+    @Column(name = "h3_index_res8")
+    private String h3IndexRes8;
+
+    @Column(name = "h3_index_res9")
+    private String h3IndexRes9;
+
     @Column(name = "is_default_geo_point")
     private Boolean isDefaultGeoPoint = true;
 

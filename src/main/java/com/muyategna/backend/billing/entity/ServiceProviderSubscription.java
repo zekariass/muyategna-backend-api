@@ -61,8 +61,8 @@ public class ServiceProviderSubscription {
     @Column(name = "initial_credits", nullable = false)
     private BigDecimal initialCredits;
 
-    @Column(name = "used_credits", nullable = false)
-    private BigDecimal usedCredits;
+    @Column(name = "balance", nullable = false)
+    private BigDecimal balance = BigDecimal.ZERO;
 
     @Column(name = "auto_renew", nullable = false)
     private Boolean autoRenew = true;
@@ -104,6 +104,22 @@ public class ServiceProviderSubscription {
 
     @Column(name = "grace_period_ends_at")
     private LocalDateTime gracePeriodEndsAt;
+
+
+    public boolean isValid() {
+        LocalDateTime now = LocalDateTime.now();
+
+        boolean inSubscriptionPeriod = startedAt != null && endDate != null &&
+                !now.isBefore(startedAt) && !now.isAfter(endDate);
+
+        boolean inTrialPeriod = trialPeriodStartedAt != null && trialPeriodEndsAt != null &&
+                !now.isBefore(trialPeriodStartedAt) && !now.isAfter(trialPeriodEndsAt);
+
+        boolean inGracePeriod = gracePeriodStartedAt != null && gracePeriodEndsAt != null &&
+                !now.isBefore(gracePeriodStartedAt) && !now.isAfter(gracePeriodEndsAt);
+
+        return Boolean.TRUE.equals(isActive) && (inSubscriptionPeriod || inTrialPeriod || inGracePeriod);
+    }
 }
 
 
