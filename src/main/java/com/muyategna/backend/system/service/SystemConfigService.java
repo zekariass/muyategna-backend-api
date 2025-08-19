@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SystemConfigService {
     Page<SystemConfigDto> getAllSystemConfigsFromDB(Pageable pageable);
@@ -25,4 +26,6 @@ public interface SystemConfigService {
     SystemConfig getSystemConfigByName(String name);
 
     List<SystemConfig> getSystemConfigsByName(List<String> configNames);
+
+    Optional<SystemConfig> getSystemConfigByNameOptional(String configName);
 }

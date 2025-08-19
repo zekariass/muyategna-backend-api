@@ -76,4 +76,10 @@ public class UserProfileServiceImpl implements UserProfileService {
             }
         }
     }
+
+    @Override
+    public UserProfile getUserProfile(Long userEntityId) {
+        return userProfileRepository.findById(userEntityId)
+                .orElse(null);
+    }
 }

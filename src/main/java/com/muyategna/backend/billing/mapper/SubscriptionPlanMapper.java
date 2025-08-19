@@ -15,6 +15,9 @@ import java.util.List;
 public final class SubscriptionPlanMapper {
 
     public static SubscriptionPlanDto toDto(SubscriptionPlan subscriptionPlan) {
+        if (subscriptionPlan == null) {
+            return null;
+        }
         return SubscriptionPlanDto.builder()
                 .id(subscriptionPlan.getId())
                 .countryId(subscriptionPlan.getCountry().getId())
@@ -38,6 +41,12 @@ public final class SubscriptionPlanMapper {
 
     public static SubscriptionPlanLocalizedDto toLocalizedDto(SubscriptionPlan subscriptionPlan,
                                                               SubscriptionPlanTranslation translation) {
+        if (subscriptionPlan == null) {
+            return null;
+        }
+        if (translation == null) {
+            throw new ResourceNotFoundException("Subscription plan translation not found for subscription plan ID: " + subscriptionPlan.getId());
+        }
         return SubscriptionPlanLocalizedDto.builder()
                 .id(subscriptionPlan.getId())
                 .countryId(subscriptionPlan.getCountry().getId())
@@ -60,6 +69,12 @@ public final class SubscriptionPlanMapper {
 
     public static SubscriptionPlanLocalizedDto toLocalizedMinimalDto(SubscriptionPlan subscriptionPlan,
                                                                      SubscriptionPlanTranslation translation) {
+        if (subscriptionPlan == null) {
+            return null;
+        }
+        if (translation == null) {
+            throw new ResourceNotFoundException("Subscription plan translation not found for subscription plan ID: " + subscriptionPlan.getId());
+        }
         return SubscriptionPlanLocalizedDto.builder()
                 .id(subscriptionPlan.getId())
                 .countryId(subscriptionPlan.getCountry().getId())
@@ -100,12 +115,13 @@ public final class SubscriptionPlanMapper {
     }
 
 
-    public static SubscriptionPlan toEntity(SubscriptionPlanDto subscriptionPlanDto,
-                                            Country country,
-                                            ServiceCategory serviceCategory) {
+    public static SubscriptionPlan toEntity(SubscriptionPlanDto subscriptionPlanDto) {
+        if (subscriptionPlanDto == null) {
+            return null;
+        }
         SubscriptionPlan subscriptionPlan = new SubscriptionPlan();
         subscriptionPlan.setId(subscriptionPlanDto.getId());
-        subscriptionPlan.setCountry(country);
+//        subscriptionPlan.setCountry(country);
         subscriptionPlan.setName(subscriptionPlanDto.getName());
         subscriptionPlan.setPriceAmount(subscriptionPlanDto.getPriceAmount());
         subscriptionPlan.setBillingCycle(subscriptionPlanDto.getBillingCycle());
@@ -126,6 +142,9 @@ public final class SubscriptionPlanMapper {
     public static SubscriptionPlan toEntity(SubscriptionPlanUpdateDto subscriptionPlanDto,
                                             Country country,
                                             ServiceCategory serviceCategory) {
+        if (subscriptionPlanDto == null) {
+            return null;
+        }
         SubscriptionPlan subscriptionPlan = new SubscriptionPlan();
         subscriptionPlan.setId(subscriptionPlanDto.getId());
         subscriptionPlan.setCountry(country);
@@ -148,6 +167,9 @@ public final class SubscriptionPlanMapper {
     public static SubscriptionPlan toEntity(SubscriptionPlanCreateDto subscriptionPlanDto,
                                             Country country,
                                             ServiceCategory serviceCategory) {
+        if (subscriptionPlanDto == null) {
+            return null;
+        }
         SubscriptionPlan subscriptionPlan = new SubscriptionPlan();
         subscriptionPlan.setCountry(country);
         subscriptionPlan.setName(subscriptionPlanDto.getName());

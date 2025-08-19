@@ -1,0 +1,6 @@
+NGROK STATIC URL:
+ngrok http --url=winning-rationally-worm.ngrok-free.app 80 or 8080
+
+PESAPAL IPN INFO:
+"ipn_id": "d8a7fbff-98b8-433c-800c-db74f13f5b47"
+"url": "https://winning-rationally-worm.ngrok-free.app/api/v1/secured/billing/payment/pesapal/IPN"

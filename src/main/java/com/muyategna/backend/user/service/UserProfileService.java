@@ -9,8 +9,12 @@ import java.util.UUID;
 public interface UserProfileService {
 
     UserProfileDto findByKeycloakUserId(UUID id);
+
     UserProfileDto save(UserProfile userProfile);
+
     UserProfileDto createProfileFromKeycloakAuthToken(JwtAuthenticationToken authToken);
+
     void updateDefaultLanguageForUser(Long id, String languageCode);
 
+    UserProfile getUserProfile(Long userEntityId);
 }

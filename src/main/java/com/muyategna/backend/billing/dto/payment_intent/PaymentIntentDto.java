@@ -1,8 +1,8 @@
 package com.muyategna.backend.billing.dto.payment_intent;
 
-import com.muyategna.backend.billing.enums.PayerEntityTypeEnum;
 import com.muyategna.backend.billing.enums.PaymentIntentStatusEnum;
-import com.muyategna.backend.billing.enums.ProductTypeEnum;
+import com.muyategna.backend.billing.enums.ProductType;
+import com.muyategna.backend.billing.enums.UserEntityType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,11 +17,11 @@ import java.time.LocalDateTime;
 @Builder
 public class PaymentIntentDto {
     private Long id;
-    private PayerEntityTypeEnum payerEntityType;
+    private UserEntityType userEntityType;
     private Long payerEntityId;
     private BigDecimal amountBeforeTax;
     private String currency;
-    private ProductTypeEnum productType;
+    private ProductType productType;
     private PaymentIntentStatusEnum status;
     private LocalDateTime paymentDueAt;
     private LocalDateTime createdAt;

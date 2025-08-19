@@ -13,6 +13,9 @@ import java.util.List;
 public final class AddOnPlanMapper {
 
     public static AddOnPlanDto toDto(AddOnPlan addOnPlan) {
+        if (addOnPlan == null) {
+            return null;
+        }
         return AddOnPlanDto.builder()
                 .id(addOnPlan.getId())
                 .countryId(addOnPlan.getCountry().getId())
@@ -32,6 +35,15 @@ public final class AddOnPlanMapper {
 
     public static AddOnPlanLocalizedDto toLocalizedDto(AddOnPlan addOnPlan,
                                                        AddOnPlanTranslation translation) {
+        if (addOnPlan == null) {
+            return null;
+        }
+
+        if (translation == null) {
+            translation = new AddOnPlanTranslation();
+            translation.setDisplayName(addOnPlan.getName());
+            translation.setDescription("");
+        }
         return AddOnPlanLocalizedDto.builder()
                 .id(addOnPlan.getId())
                 .countryId(addOnPlan.getCountry().getId())
@@ -55,15 +67,14 @@ public final class AddOnPlanMapper {
     }
 
 
-    public static AddOnPlan toEntity(AddOnPlanDto addOnPlanDto,
-                                     Country country) {
+    public static AddOnPlan toEntity(AddOnPlanDto addOnPlanDto) {
         if (addOnPlanDto == null) {
             return null;
         }
         AddOnPlan addOnPlan = new AddOnPlan();
         addOnPlan.setId(addOnPlanDto.getId());
         addOnPlan.setName(addOnPlanDto.getName());
-        addOnPlan.setCountry(country);
+//        addOnPlan.setCountry(country);
         addOnPlan.setPriceAmount(addOnPlanDto.getPriceAmount());
         addOnPlan.setCreditsIncluded(addOnPlanDto.getCreditsIncluded());
         addOnPlan.setSortOrder(addOnPlanDto.getSortOrder());

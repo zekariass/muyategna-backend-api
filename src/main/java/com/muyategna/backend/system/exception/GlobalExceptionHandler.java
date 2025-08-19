@@ -198,6 +198,12 @@ public class GlobalExceptionHandler {
         return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
+
+//    @ExceptionHandler(BadRequestException.class)
+//    public ResponseEntity<ApiResponse<Object>> handleBadRequestException(BadRequestException ex, HttpServletRequest request) {
+//        return buildApiResponse(null, HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+//    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolationException(DataIntegrityViolationException ex, HttpServletRequest request) {
 //        return buildApiResponse(null, HttpStatus.FORBIDDEN, ex.getMessage(), request);

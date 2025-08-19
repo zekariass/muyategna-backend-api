@@ -1,8 +1,6 @@
 package com.muyategna.backend.billing.entity;
 
-import com.muyategna.backend.billing.enums.PayerEntityTypeEnum;
-import com.muyategna.backend.billing.enums.PaymentIntentStatusEnum;
-import com.muyategna.backend.billing.enums.ProductTypeEnum;
+import com.muyategna.backend.billing.enums.UserEntityType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,50 +12,51 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
-@Table(name = "payment_intent")
+@Table(name = "coupon_usage_tracker")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class PaymentIntent {
+public class CouponUsageTracker {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id", nullable = false)
+    private Coupon coupon;
+
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "provider_id", nullable = false)
+//    private ServiceProvider provider;
+
     @Enumerated(EnumType.STRING)
-    private PayerEntityTypeEnum payerEntityType;
-
-    private Long payerEntityId;
-    private BigDecimal amountBeforeTax = BigDecimal.ZERO;
-
-    @Column(nullable = false)
-    private String currency;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "coupon_user_type", nullable = false)
     @JdbcType(PostgreSQLEnumJdbcType.class)
-    private ProductTypeEnum productType;
+    private UserEntityType couponUserType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @JdbcType(PostgreSQLEnumJdbcType.class)
-    private PaymentIntentStatusEnum status; // Create quartz job to remind about payment intents
+    @Column(name = "coupon_user_id", nullable = false)
+    private Long couponUserId;
 
     @Column(nullable = false)
-    private LocalDateTime paymentDueAt;
+    private Integer usageLimit;
+
+    @Column(nullable = false)
+    private Integer useCount = 0;
+
+    @Column(nullable = false)
+    private Boolean isActive = true;
 
     @CreatedDate
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
-
-    @OneToMany(mappedBy = "paymentIntent")
-    private List<Transaction> transactions;
 }

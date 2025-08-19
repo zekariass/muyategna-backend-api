@@ -1,15 +1,18 @@
 package com.muyategna.backend.billing.service;
 
+import com.muyategna.backend.billing.dto.subscription_plan.SubscriptionPlanDto;
 import com.muyategna.backend.billing.dto.subscription_plan.SubscriptionPlanLocalizedDto;
 import com.muyategna.backend.billing.entity.SubscriptionPlan;
 import com.muyategna.backend.billing.entity.SubscriptionPlanTranslation;
 import com.muyategna.backend.billing.mapper.SubscriptionPlanMapper;
 import com.muyategna.backend.billing.repository.SubscriptionPlanRepository;
 import com.muyategna.backend.location.dto.country.CountryDto;
+import com.muyategna.backend.redis.CacheConstants;
 import com.muyategna.backend.system.context.CountryContextHolder;
 import com.muyategna.backend.system.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -48,5 +51,18 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
         SubscriptionPlanTranslation translation = subscriptionPlanTranslationService.getSubscriptionPlanTranslationBySubscriptionPlanId(subscriptionPlan.getId()).orElseThrow(() -> new ResourceNotFoundException("Subscription plan not found"));
 
         return SubscriptionPlanMapper.toLocalizedDto(subscriptionPlan, translation);
+    }
+
+    @Cacheable(
+            value = CacheConstants.CACHE_BILLING,
+            key = "T(com.muyategna.backend.redis.BillingCacheKeyUtil).getSubscriptionPlanKey(#subscriptionPlanId)",
+            unless = "#result == null"
+    )
+    @Override
+    public SubscriptionPlanDto getSubscriptionPlan(Long subscriptionPlanId) {
+        log.info("Retrieving subscription plan with id: {}", subscriptionPlanId);
+        CountryDto countryDto = CountryContextHolder.getCountry();
+        SubscriptionPlan subscriptionPlan = subscriptionPlanRepository.findSubscriptionPlanByIdAndCountryId(subscriptionPlanId, countryDto.getId()).orElse(null);
+        return subscriptionPlan != null ? SubscriptionPlanMapper.toDto(subscriptionPlan) : null;
     }
 }

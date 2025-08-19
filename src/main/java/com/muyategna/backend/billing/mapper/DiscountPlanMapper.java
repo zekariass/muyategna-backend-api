@@ -26,7 +26,7 @@ public final class DiscountPlanMapper {
                 .maxDiscountValue(discountPlan.getMaxDiscountValue())
                 .isActive(discountPlan.getIsActive())
                 .couponRequired(discountPlan.getCouponRequired())
-                .appliesTo(discountPlan.getAppliesTo())
+//                .appliesTo(discountPlan.getAppliesTo())
                 .extraData(discountPlan.getExtraData())
                 .createdAt(discountPlan.getCreatedAt())
                 .updatedAt(discountPlan.getUpdatedAt())
@@ -46,7 +46,7 @@ public final class DiscountPlanMapper {
                 .percentageValue(discountPlan.getPercentageValue())
                 .isActive(discountPlan.getIsActive())
                 .couponRequired(discountPlan.getCouponRequired())
-                .appliesTo(discountPlan.getAppliesTo())
+//                .appliesTo(discountPlan.getAppliesTo())
                 .extraData(discountPlan.getExtraData())
                 .build();
     }
@@ -68,7 +68,7 @@ public final class DiscountPlanMapper {
         discountPlan.setCreatedAt(discountPlanDto.getCreatedAt());
         discountPlan.setUpdatedAt(discountPlanDto.getUpdatedAt());
         discountPlan.setCouponRequired(discountPlanDto.getCouponRequired());
-        discountPlan.setAppliesTo(discountPlanDto.getAppliesTo());
+//        discountPlan.setAppliesTo(discountPlanDto.getAppliesTo());
         discountPlan.setExtraData(discountPlanDto.getExtraData());
         return discountPlan;
     }
@@ -89,7 +89,7 @@ public final class DiscountPlanMapper {
         discountPlan.setMaxDiscountValue(discountPlanDto.getMaxDiscountValue());
         discountPlan.setIsActive(discountPlanDto.getIsActive());
         discountPlan.setCouponRequired(discountPlanDto.getCouponRequired());
-        discountPlan.setAppliesTo(discountPlanDto.getAppliesTo());
+//        discountPlan.setAppliesTo(discountPlanDto.getAppliesTo());
         discountPlan.setExtraData(discountPlanDto.getExtraData());
         return discountPlan;
     }
@@ -110,7 +110,7 @@ public final class DiscountPlanMapper {
         discountPlan.setMaxDiscountValue(discountPlanDto.getMaxDiscountValue());
         discountPlan.setIsActive(discountPlanDto.getIsActive());
         discountPlan.setCouponRequired(discountPlanDto.getCouponRequired());
-        discountPlan.setAppliesTo(discountPlanDto.getAppliesTo());
+//        discountPlan.setAppliesTo(discountPlanDto.getAppliesTo());
         discountPlan.setExtraData(discountPlanDto.getExtraData());
         return discountPlan;
     }

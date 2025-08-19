@@ -71,4 +71,11 @@ public class AddOnPlanDiscountEligibilityServiceImpl implements AddOnPlanDiscoun
 
         return eligibilityDtoList;
     }
+
+    @Override
+    public List<AddOnPlanDiscountEligibility> getAllActiveAddOnPlanDiscountEligibilityByAddOnPlanId(List<Long> addOnPlanIds, boolean isActive) {
+        log.info("Getting all active localized add-on plan discount eligibility by add-on plan ids: {}", addOnPlanIds);
+        return repository
+                .findAllActiveLocalizedAddOnPlanDiscountEligibilityByAddOnPlanId(addOnPlanIds, isActive);
+    }
 }

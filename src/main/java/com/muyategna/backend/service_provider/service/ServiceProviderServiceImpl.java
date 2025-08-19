@@ -335,4 +335,16 @@ public class ServiceProviderServiceImpl implements ServiceProviderServiceInterfa
         log.info("Retrieving Service Provider with ID: {} with notification preferences", providerId);
         return serviceProviderRepository.getServiceProviderByIdWithNotificationPreference(providerId);
     }
+
+    @Override
+    public ServiceProvider getServiceProviderWithBusinessAddressById(Long providerId) {
+        log.info("Retrieving Service Provider with ID : {}", providerId);
+        return serviceProviderRepository.getServiceProviderWithBusinessAddressById(providerId);
+    }
+
+    @Override
+    public Optional<ServiceProvider> getServiceProvider(Long serviceProviderId) {
+        log.info("Retrieving Service Provider with ID: {}", serviceProviderId);
+        return serviceProviderRepository.findById(serviceProviderId);
+    }
 }

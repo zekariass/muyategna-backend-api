@@ -33,15 +33,15 @@ public class SubscriptionTransaction {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_provider_subscription_id", nullable = false)
-    private ServiceProviderSubscription serviceProviderSubscriptionId;
+    private ServiceProviderSubscription serviceProviderSubscription;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "provider_id", nullable = false)
-    private ServiceProvider providerId;
+    private ServiceProvider provider;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transaction_id", nullable = false)
-    private Transaction transactionId;
+    private Transaction transaction;
 
 //    @Column(name = "leads_included")
 //    private Integer leadsIncluded = 0;

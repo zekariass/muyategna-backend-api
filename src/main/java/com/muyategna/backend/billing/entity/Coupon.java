@@ -14,7 +14,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "coupon")
@@ -70,8 +69,8 @@ public class Coupon {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @Transient
-    @OneToMany(mappedBy = "coupon", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ServiceProviderCouponTracker> providerTrackers;
+    @Version
+    private Integer version; // Optimistic locking version field
+
 }
 

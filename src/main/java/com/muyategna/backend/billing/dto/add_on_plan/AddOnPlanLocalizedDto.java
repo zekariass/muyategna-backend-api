@@ -1,11 +1,13 @@
 package com.muyategna.backend.billing.dto.add_on_plan;
 
+import com.muyategna.backend.billing.dto.discount_plan.DiscountPlanDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -22,6 +24,8 @@ public class AddOnPlanLocalizedDto {
     private BigDecimal creditsIncluded;
     private Integer sortOrder;
     private Map<String, String> extraData;
+
+    private List<DiscountPlanDto> discounts;
 
 }
 

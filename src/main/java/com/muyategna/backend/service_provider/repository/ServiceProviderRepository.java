@@ -106,4 +106,11 @@ public interface ServiceProviderRepository extends JpaRepository<ServiceProvider
             @Param("jobGeoPoint") String jobGeoPoint);
 
 
+    @Query("""
+                SELECT DISTINCT s
+                FROM ServiceProvider s
+                LEFT JOIN FETCH s.businessAddress ba
+                WHERE s.id = :providerId
+            """)
+    ServiceProvider getServiceProviderWithBusinessAddressById(@Param("providerId") Long providerId);
 }

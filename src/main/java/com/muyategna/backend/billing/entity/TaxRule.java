@@ -34,7 +34,7 @@ public class TaxRule {
     @JoinColumn(name = "region_id")
     private Region region;
 
-    private String taxType; // VAT
+    private String taxType;
     private String name;
     private String description;
 

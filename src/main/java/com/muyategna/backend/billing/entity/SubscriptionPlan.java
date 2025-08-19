@@ -4,7 +4,10 @@ import com.muyategna.backend.billing.enums.BillingCycleEnum;
 import com.muyategna.backend.location.entity.Country;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -47,7 +50,7 @@ public class SubscriptionPlan {
     @Column(name = "trial_period_days", nullable = false)
     private Integer trialPeriodDays = 0;
 
-    @Column(name = "plan_order", nullable = false)
+    @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;
 
     @Column(name = "is_default", nullable = false)

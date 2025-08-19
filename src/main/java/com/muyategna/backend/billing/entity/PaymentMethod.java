@@ -25,6 +25,9 @@ public class PaymentMethod {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true, length = 50)
+    private String code;
+
     @ManyToOne
     @JoinColumn(name = "country_id")
     private Country country;

@@ -1,6 +1,6 @@
 package com.muyategna.backend.billing.dto.service_provider_invoice;
 
-import com.muyategna.backend.billing.enums.ProductTypeEnum;
+import com.muyategna.backend.billing.enums.ProductType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +18,7 @@ public class ServiceProviderInvoiceItemDto {
     private Long parentInvoiceId;
     private Long taxRuleId;
     private String description;
-    private ProductTypeEnum productType;
+    private ProductType productType;
     private BigDecimal unitPrice;
     private Integer quantity;
     private BigDecimal subTotalAmount;

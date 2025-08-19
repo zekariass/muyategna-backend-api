@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -115,6 +116,12 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     public List<SystemConfig> getSystemConfigsByName(List<String> configNames) {
         log.info("Retrieving SystemConfigs with names: {}", configNames);
         return systemConfigRepository.findAllByNameIn(configNames);
+    }
+
+    @Override
+    public Optional<SystemConfig> getSystemConfigByNameOptional(String configName) {
+        log.info("Retrieving SystemConfig with name: {}", configName);
+        return systemConfigRepository.findByName(configName);
     }
 
     /**

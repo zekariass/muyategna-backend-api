@@ -240,7 +240,9 @@ CREATE TABLE IF NOT EXISTS user_profile (
     default_language_id BIGINT NOT NULL, -- Foreign key to the language table
     last_login TIMESTAMP,
     referral_code VARCHAR(30),
+
     is_staff BOOLEAN DEFAULT FALSE,
+    is_admin BOOLEAN DEFAULT FALSE,
 
     is_deleted BOOLEAN DEFAULT FALSE,
     extra_ata JSONB,
@@ -945,15 +947,20 @@ CREATE INDEX idx_spa_document_id_provider_id ON service_provider_agreement(docum
 CREATE TYPE payer_entity_type_enum AS ENUM ('SERVICE_PROVIDER', 'CUSTOMER');
 CREATE TYPE product_type_enum AS ENUM ('SUBSCRIPTION', 'ADD_ON');
 --CREATE TYPE payment_intent_status_enum AS ENUM ('PENDING', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'EXPIRED');
-CREATE TYPE payment_intent_status_enum AS ENUM (
-    'PENDING',
-    'PROCESSED',
-    'CANCELLED',
-    'EXPIRED'
-);
+--CREATE TYPE payment_intent_status_enum AS ENUM (
+--    'PENDING',
+--    'PROCESSED',
+--    'CANCELLED',
+--    'EXPIRED'
+--);
 
 CREATE TYPE transaction_status_enum AS ENUM (
-    'SUCCEEDED',
+    'INITIATED',
+    'AWAITING_BANK_TRANSFER',
+--    'SUCCEEDED',
+    'WEBHOOK_RECEIVED',
+    'COMPLETED',
+    'CANCELLED',
     'FAILED',
     'TIMEOUT',
     'DISPUTED',
@@ -966,14 +973,12 @@ CREATE TYPE accounting_type_enum AS ENUM (
 );
 
 CREATE TYPE txn_type_enum AS ENUM (
-    'ORIGINAL',  -- The initial transaction
-    'DISPUTE',   -- A transaction under dispute
-    'REFUND'     -- A refund issued for a previous transaction
+    'CHARGE', 'PAYOUT', 'DISPUTE', 'REFUND'
 );
 
 
 --CREATE TYPE transaction_status_enum AS ENUM ('INITIATED', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'TIMEOUT', 'DISPUTED', 'REFUNDED');
-CREATE TYPE invoice_status_enum AS ENUM ('PAID', 'CANCELLED');
+CREATE TYPE invoice_status_enum AS ENUM ('SENT', 'PAID', 'OVERDUE', 'CANCELLED');
 CREATE TYPE billing_cycle_enum AS ENUM ('DAY', 'WEEK', 'MONTH', 'YEAR');
 CREATE TYPE coupon_status_enum AS ENUM ('ACTIVE', 'INACTIVE', 'REDEEMED', 'EXPIRED');
 CREATE TYPE discount_user_type AS enum('NEW_USER', 'EXISTING_USER', 'ANY_USER');
@@ -1006,6 +1011,7 @@ CREATE INDEX idx_tax_rule_region ON tax_rule(region_id);
 
 CREATE TABLE payment_method (
     id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(30) NOT NULL UNIQUE, -- e.g., 'CREDIT_CARD', 'BANK_TRANSFER', 'CHAPA'
     country_id BIGINT NOT NULL,
     name VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1033,107 +1039,282 @@ CREATE TABLE payment_method_translation (
 CREATE INDEX idx_pmt_payment_method_id ON payment_method_translation(payment_method_id);
 CREATE INDEX idx_pmt_language_id ON payment_method_translation(language_id);
 CREATE INDEX idx_pmt_payment_method_id_language_id ON payment_method_translation(payment_method_id, language_id);
+--
+---- TABLE: payment_intent
+--CREATE TABLE payment_intent (
+--    id BIGSERIAL PRIMARY KEY,
+--    payer_entity_type payer_entity_type_enum NOT NULL,
+--    payer_entity_id BIGINT NOT NULL, -- service provider or customer. No referential integrity here
+--    amount_before_tax NUMERIC(15,4) NOT NULL,
+--    currency VARCHAR(10) NOT NULL,
+--    product_type product_type_enum NOT NULL,
+--    status payment_intent_status_enum NOT NULL,
+--    payment_due_at TIMESTAMP NOT NULL,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+--);
+--
+--CREATE INDEX idx_payment_intent_payer ON payment_intent(payer_entity_type, payer_entity_id);
+--CREATE INDEX idx_payment_intent_payer_status ON payment_intent(payer_entity_type, payer_entity_id, status);
+--
+--
+---- TABLE: transaction
+--CREATE TABLE transaction (
+--    id BIGSERIAL PRIMARY KEY,
+--    payment_intent_id BIGINT,
+--    payment_method_id BIGINT,
+--    sub_total_amount NUMERIC(15,4) NOT NULL,
+--    tax_amount NUMERIC(15,4) NOT NULL,
+--    amount_paid NUMERIC(15,4) NOT NULL,
+--    txn_reference VARCHAR(255) UNIQUE,
+--    currency VARCHAR(10) NOT NULL,
+--    description TEXT,
+--
+--    accounting_type accounting_type_enum NOT NULL,
+--    refunded_amount NUMERIC(15,4) NOT NULL DEFAULT 0.00,
+--    original_txn_id BIGINT,
+--    response_code VARCHAR(50),
+--    txn_type txn_type_enum NOT NULL DEFAULT 'ORIGINAL',
+--
+--    status transaction_status_enum NOT NULL,
+--    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+--    CONSTRAINT fk_transaction_payment_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intent(id) ON DELETE SET NULL,
+--    CONSTRAINT fk_transaction_payment_method FOREIGN KEY (payment_method_id) REFERENCES payment_method(id) ON DELETE SET NULL,
+--    CONSTRAINT fk_transaction_original_txn FOREIGN KEY (original_txn_id) REFERENCES transaction(id) ON DELETE SET NULL
+--);
+--
+--CREATE INDEX idx_transaction_payment_intent ON transaction(payment_intent_id);
+--CREATE INDEX idx_transaction_payment_intent_payment_method ON transaction(payment_intent_id, payment_method_id);
+--CREATE INDEX idx_transaction_status ON transaction(status);
+--
+--
+--CREATE TABLE service_provider_invoice (
+--    id BIGSERIAL PRIMARY KEY,
+--    provider_id BIGINT NOT NULL,
+--    provider_tax_info_id BIGINT,
+--    transaction_id BIGINT NOT NULL,
+--    country_id BIGINT NOT NULL,
+--    region_id BIGINT,
+--    description TEXT,
+--    sub_total_amount NUMERIC(15,4) NOT NULL,
+--    tax_amount NUMERIC(15,4) NOT NULL,
+--    total_amount NUMERIC(15,4) NOT NULL,
+--    currency VARCHAR(10) NOT NULL,
+--    status invoice_status_enum NOT NULL,
+--    is_locked BOOLEAN NOT NULL DEFAULT FALSE, -- if the invoice is locked, it cannot be modified
+--    extra_data JSONB,
+--    issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    CONSTRAINT fk_invoice_transaction FOREIGN KEY (transaction_id) REFERENCES transaction(id),
+--    CONSTRAINT fk_invoice_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id),
+--    CONSTRAINT fk_invoice_provider_tax_info FOREIGN KEY (provider_tax_info_id) REFERENCES service_provider_tax_info(id),
+--    CONSTRAINT fk_invoice_country FOREIGN KEY (country_id) REFERENCES country(country_id),
+--    CONSTRAINT fk_invoice_region FOREIGN KEY (region_id) REFERENCES region(region_id)
+--);
+--
+--CREATE INDEX idx_invoice_provider ON service_provider_invoice(provider_id);
+--CREATE INDEX idx_invoice_region ON service_provider_invoice(region_id);
+--CREATE INDEX idx_invoice_country ON service_provider_invoice(country_id);
+--CREATE INDEX idx_invoice_transaction ON service_provider_invoice(transaction_id);
+--CREATE INDEX idx_invoice_service_provider_status ON service_provider_invoice(provider_id, status);
 
--- TABLE: payment_intent
-CREATE TABLE payment_intent (
+
+--CREATE TABLE service_provider_invoice_item (
+--    id BIGSERIAL PRIMARY KEY,
+--    parent_invoice_id BIGINT NOT NULL,
+--    tax_rule_id BIGINT NOT NULL,
+--    description TEXT,
+--    product_type product_type_enum NOT NULL,
+--    unit_price NUMERIC(15,4) NOT NULL,
+--    quantity INT NOT NULL DEFAULT 1,
+--    sub_total_amount NUMERIC(15,4) NOT NULL,
+--    tax_amount NUMERIC(15,4) NOT NULL,
+--    total_amount NUMERIC(15,4) NOT NULL,
+--    extra_data JSONB,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    CONSTRAINT fk_invoice_item_invoice FOREIGN KEY (parent_invoice_id) REFERENCES service_provider_invoice(id) ON DELETE CASCADE,
+--    CONSTRAINT fk_invoice_item_tax_rule FOREIGN KEY (tax_rule_id) REFERENCES tax_rule(id)
+--);
+--
+--CREATE INDEX idx_invoice_item_invoice ON service_provider_invoice_item(parent_invoice_id);
+--CREATE INDEX idx_invoice_item_tax_rule ON service_provider_invoice_item(tax_rule_id);
+
+
+-- Invoice number sequence
+CREATE SEQUENCE invoice_number_seq START 1000; -- start from 1000 or any number you like
+CREATE SEQUENCE transaction_reference_seq START 1000; -- start from 1000 or any number you like
+
+CREATE TABLE invoice (
     id BIGSERIAL PRIMARY KEY,
+    invoice_number VARCHAR(50) UNIQUE NOT NULL,
     payer_entity_type payer_entity_type_enum NOT NULL,
-    payer_entity_id BIGINT NOT NULL, -- service provider or customer. No referential integrity here
-    amount_before_tax NUMERIC(15,4) NOT NULL,
-    currency VARCHAR(10) NOT NULL,
-    product_type product_type_enum NOT NULL,
-    status payment_intent_status_enum NOT NULL,
-    payment_due_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_payment_intent_payer ON payment_intent(payer_entity_type, payer_entity_id);
-CREATE INDEX idx_payment_intent_payer_status ON payment_intent(payer_entity_type, payer_entity_id, status);
-
-
--- TABLE: transaction
-CREATE TABLE transaction (
-    id BIGSERIAL PRIMARY KEY,
-    payment_intent_id BIGINT,
-    payment_method_id BIGINT,
-    sub_total_amount NUMERIC(15,4) NOT NULL,
-    tax_amount NUMERIC(15,4) NOT NULL,
-    amount_paid NUMERIC(15,4) NOT NULL,
-    txn_reference VARCHAR(255) UNIQUE,
-    currency VARCHAR(10) NOT NULL,
-    description TEXT,
-
-    accounting_type accounting_type_enum NOT NULL,
-    refunded_amount NUMERIC(15,4) NOT NULL DEFAULT 0.00,
-    original_txn_id BIGINT,
-    response_code VARCHAR(50),
-    txn_type txn_type_enum NOT NULL DEFAULT 'ORIGINAL',
-
-    status transaction_status_enum NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_transaction_payment_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intent(id) ON DELETE SET NULL,
-    CONSTRAINT fk_transaction_payment_method FOREIGN KEY (payment_method_id) REFERENCES payment_method(id) ON DELETE SET NULL,
-    CONSTRAINT fk_transaction_original_txn FOREIGN KEY (original_txn_id) REFERENCES transaction(id) ON DELETE SET NULL
-);
-
-CREATE INDEX idx_transaction_payment_intent ON transaction(payment_intent_id);
-CREATE INDEX idx_transaction_payment_intent_payment_method ON transaction(payment_intent_id, payment_method_id);
-CREATE INDEX idx_transaction_status ON transaction(status);
-
-
-CREATE TABLE service_provider_invoice (
-    id BIGSERIAL PRIMARY KEY,
-    provider_id BIGINT NOT NULL,
-    provider_tax_info_id BIGINT,
-    transaction_id BIGINT NOT NULL,
+    payer_entity_id BIGINT NOT NULL,
     country_id BIGINT NOT NULL,
     region_id BIGINT,
-    description TEXT,
-    sub_total_amount NUMERIC(15,4) NOT NULL,
-    tax_amount NUMERIC(15,4) NOT NULL,
-    total_amount NUMERIC(15,4) NOT NULL,
-    currency VARCHAR(10) NOT NULL,
-    status invoice_status_enum NOT NULL,
-    is_locked BOOLEAN NOT NULL DEFAULT FALSE, -- if the invoice is locked, it cannot be modified
-    extra_data JSONB,
+
+    product_type product_type_enum NOT NULL,
+    product_plan_id BIGINT NOT NULL, -- Reference to the product plan such as subscription or add-on plan
+    discount_plan_id BIGINT, -- Reference to the discount plan
+    coupon_id BIGINT,
+    coupon_code VARCHAR(100) DEFAULT NULL, -- Code of the coupon applied
+
+    note TEXT,
+    sub_total_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+--    tax_rule_id BIGINT,
+    tax_rule_ids BIGINT[], -- Array of tax rule IDs
+    tax_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+    discount_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+    total_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+    credits_included NUMERIC(15, 2) NOT NULL DEFAULT 0,
+    currency CHAR(3) NOT NULL, -- ISO 4217 code
+    due_date  TIMESTAMP,
     issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    paid_at TIMESTAMP,
+    status invoice_status_enum NOT NULL DEFAULT 'PAID',
+    is_locked BOOLEAN NOT NULL DEFAULT FALSE,
+    extra_data JSONB,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_invoice_transaction FOREIGN KEY (transaction_id) REFERENCES transaction(id),
-    CONSTRAINT fk_invoice_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id),
-    CONSTRAINT fk_invoice_provider_tax_info FOREIGN KEY (provider_tax_info_id) REFERENCES service_provider_tax_info(id),
     CONSTRAINT fk_invoice_country FOREIGN KEY (country_id) REFERENCES country(country_id),
-    CONSTRAINT fk_invoice_region FOREIGN KEY (region_id) REFERENCES region(region_id)
+    CONSTRAINT fk_invoice_region FOREIGN KEY (region_id) REFERENCES region(region_id),
+    CONSTRAINT fk_invoice_discount_plan FOREIGN KEY (discount_plan_id) REFERENCES discount_plan(id) ON DELETE SET NULL,
+    CONSTRAINT fk_invoice_coupon FOREIGN KEY (coupon_id) REFERENCES coupon(id) ON DELETE SET NULL
+);
+CREATE INDEX idx_invoice_country_id ON invoice(country_id);
+CREATE INDEX idx_invoice_region_id ON invoice(region_id);
+CREATE INDEX idx_invoice_status ON invoice(status);
+CREATE INDEX idx_invoice_payer ON invoice(payer_entity_type, payer_entity_id);
+CREATE INDEX idx_invoice_discount_plan ON invoice(discount_plan_id);
+CREATE INDEX idx_invoice_coupon ON invoice(coupon_id);
+
+--
+--CREATE TABLE invoice_item (
+--    id BIGSERIAL PRIMARY KEY,
+--    invoice_id BIGINT NOT NULL,
+--    product_type product_type_enum NOT NULL,
+--    unit_price NUMERIC(15, 2) NOT NULL CHECK (unit_price >= 0),
+--    quantity INTEGER NOT NULL CHECK (quantity > 0),
+--    sub_total_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+--    discount_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+--    tax_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+--    total_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+--    extra_data JSONB,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    CONSTRAINT fk_invoice_item_invoice FOREIGN KEY (invoice_id) REFERENCES invoice(id)
+--);
+--CREATE INDEX idx_invoice_item_invoice_id ON invoice_item(invoice_id);
+
+
+
+--CREATE TABLE payment_intent (
+--    id BIGSERIAL PRIMARY KEY,
+--    invoice_id BIGINT NOT NULL,
+--    payment_ref VARCHAR(50) UNIQUE NOT NULL,
+--    amount NUMERIC(15, 2) NOT NULL CHECK (amount >= 0),
+--    currency CHAR(3) NOT NULL,
+--    status payment_intent_status_enum NOT NULL DEFAULT 'PENDING',
+--    extra_data JSONB,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    expires_at TIMESTAMP,
+--    CONSTRAINT fk_payment_intent_invoice FOREIGN KEY (invoice_id) REFERENCES invoice(id) ON DELETE CASCADE
+--);
+--CREATE INDEX idx_payment_intent_invoice_id ON payment_intent(invoice_id);
+--CREATE INDEX idx_payment_intent_status ON payment_intent(status);
+
+
+
+CREATE TABLE transaction (
+    id BIGSERIAL PRIMARY KEY,
+    invoice_id BIGINT NOT NULL,
+    payment_method_id BIGINT,
+    accounting_type accounting_type_enum NOT NULL, -- e.g., debit, credit
+    amount_paid NUMERIC(15, 2) NOT NULL CHECK (amount_paid >= 0),
+    refunded_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+    txn_ref VARCHAR(100) NOT NULL,
+--    gateway_ref VARCHAR(100),
+    original_txn_id BIGINT, -- Reference to the original transaction if this is a refund or chargeback
+    currency CHAR(3) NOT NULL,
+    description TEXT,
+    response_code VARCHAR(50),
+    txn_type txn_type_enum NOT NULL, -- payment, refund, chargeback
+    extra_data JSONB,
+    status transaction_status_enum NOT NULL DEFAULT 'INITIATED',
+
+    -- GATEWAY RELATED FIELDS
+        webhook_response_map JSONB DEFAULT NULL, -- e.g., response from payment gateway
+        is_txn_verified BOOLEAN NOT NULL DEFAULT FALSE,
+        txn_verification_response_map JSONB DEFAULT NULL, -- e.g., response from verification service
+    -- -------------------------------------------
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--    CONSTRAINT fk_transaction_payment_intent FOREIGN KEY (payment_intent_id) REFERENCES payment_intent(id) ON DELETE CASCADE,
+    CONSTRAINT fk_transaction_payment_method FOREIGN KEY (payment_method_id) REFERENCES payment_method(id) ON DELETE SET NULL,
+    CONSTRAINT fk_transaction_original_txn FOREIGN KEY (original_txn_id) REFERENCES transaction(id) ON DELETE SET NULL,
+    CONSTRAINT fk_transaction_invoice FOREIGN KEY (invoice_id) REFERENCES invoice(id) ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_invoice_provider ON service_provider_invoice(provider_id);
-CREATE INDEX idx_invoice_region ON service_provider_invoice(region_id);
-CREATE INDEX idx_invoice_country ON service_provider_invoice(country_id);
-CREATE INDEX idx_invoice_transaction ON service_provider_invoice(transaction_id);
-CREATE INDEX idx_invoice_service_provider_status ON service_provider_invoice(provider_id, status);
+--CREATE INDEX idx_transaction_payment_intent_id ON transaction(payment_intent_id);
+CREATE INDEX idx_transaction_txn_type ON transaction(txn_type);
+CREATE INDEX idx_transaction_status ON transaction(status);
+CREATE INDEX idx_transaction_invoice_id ON transaction(invoice_id);
 
 
 
-CREATE TABLE service_provider_invoice_item (
+CREATE TABLE platform_bank_information (
     id BIGSERIAL PRIMARY KEY,
-    parent_invoice_id BIGINT NOT NULL,
-    tax_rule_id BIGINT NOT NULL,
-    description TEXT,
-    product_type product_type_enum NOT NULL,
-    unit_price NUMERIC(15,4) NOT NULL,
-    quantity INT NOT NULL DEFAULT 1,
-    sub_total_amount NUMERIC(15,4) NOT NULL,
-    tax_amount NUMERIC(15,4) NOT NULL,
-    total_amount NUMERIC(15,4) NOT NULL,
+    bank_name VARCHAR(150) NOT NULL,
+    bank_account_number VARCHAR(50) NOT NULL,
+    bank_sort_code VARCHAR(30),
+    swift_code VARCHAR(20),
+    iban VARCHAR(50),
+    branch_name VARCHAR(100),
+    account_holder_name VARCHAR(100) NOT NULL,
+    country_id BIGINT NOT NULL,
+    currency CHAR(3) NOT NULL, -- ISO 4217 code
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     extra_data JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_invoice_item_invoice FOREIGN KEY (parent_invoice_id) REFERENCES service_provider_invoice(id) ON DELETE CASCADE,
-    CONSTRAINT fk_invoice_item_tax_rule FOREIGN KEY (tax_rule_id) REFERENCES tax_rule(id)
+
+    CONSTRAINT fk_platform_bank_country FOREIGN KEY (country_id) REFERENCES country(country_id) ON DELETE RESTRICT,
+    CONSTRAINT uq_platform_bank_account UNIQUE (bank_account_number, currency, country_id)
+
+);
+CREATE INDEX idx_platform_bank_country ON platform_bank_information(country_id);
+
+
+CREATE SEQUENCE bank_transfer_transaction_reference_seq START 1000; -- start from 1000 or any number you like
+CREATE TYPE bank_transfer_status_enum AS ENUM ('PENDING', 'REPORTED', 'FAILED', 'CANCELLED', 'VERIFIED');
+
+CREATE TABLE bank_transfer_transaction (
+    id BIGSERIAL PRIMARY KEY,
+    transaction_id BIGINT NOT NULL,
+    txn_ref VARCHAR(50) NOT NULL UNIQUE, -- Unique reference for the bank transfer transaction
+    payee_bank_account_id BIGINT, -- FK to your platform's bank accounts
+    payer_full_name VARCHAR(100) NOT NULL,
+    payer_bank_name VARCHAR(100),
+    payer_bank_branch_name VARCHAR(100),
+    payer_bank_account_number VARCHAR(50),
+    amount_due NUMERIC(15, 2) NOT NULL,
+    amount_paid NUMERIC(15, 2) DEFAULT 0.00,
+    currency CHAR(3) NOT NULL,
+    bank_reference_number VARCHAR(50) UNIQUE, -- prevents duplicates
+    proof_of_payment_url TEXT,
+--    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'FAILED', 'CANCELLED', 'VERIFIED')),
+    status bank_transfer_status_enum NOT NULL DEFAULT 'PENDING',
+    extra_data JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    verified_at TIMESTAMP,
+    CONSTRAINT fk_bank_transfer_transaction FOREIGN KEY (transaction_id) REFERENCES transaction(id) ON DELETE CASCADE,
+    CONSTRAINT fk_bank_transfer_payee_account FOREIGN KEY (payee_bank_account_id) REFERENCES platform_bank_information(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_invoice_item_invoice ON service_provider_invoice_item(parent_invoice_id);
-CREATE INDEX idx_invoice_item_tax_rule ON service_provider_invoice_item(tax_rule_id);
+CREATE INDEX idx_bank_transfer_transaction_id ON bank_transfer_transaction(transaction_id);
+CREATE INDEX idx_bank_transfer_payee_account ON bank_transfer_transaction(payee_bank_account_id);
 
 
 CREATE TABLE add_on_plan (
@@ -1153,8 +1334,8 @@ CREATE TABLE add_on_plan (
 
     CONSTRAINT fk_add_on_plan_country FOREIGN KEY (country_id) REFERENCES country(country_id)
 );
-
 CREATE INDEX idx_addonplan_country_is_active ON add_on_plan(country_id, is_active);
+
 
 
 CREATE TABLE add_on_plan_translation (
@@ -1172,24 +1353,26 @@ CREATE TABLE add_on_plan_translation (
 CREATE INDEX idx_add_on_plan_trans_add_on_plan ON add_on_plan_translation(add_on_plan_id);
 CREATE INDEX idx_add_on_plan_trans_language ON add_on_plan_translation(language_id);
 
-CREATE TABLE add_on_transaction (
-    id BIGSERIAL PRIMARY KEY,
-    provider_id BIGINT NOT NULL,
-    add_on_plan_id BIGINT,
 
-    credits_amount DECIMAL(10,2) default 0.00,
-    transaction_id BIGINT NOT NULL, -- Reference to the transaction that purchased this add-on
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    extra_data JSONB,
-    CONSTRAINT fk_add_on_txn_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
-    CONSTRAINT fk_add_on_txn_plan FOREIGN KEY (add_on_plan_id) REFERENCES add_on_plan(id) ON DELETE SET NULL,
-    CONSTRAINT fk_add_on_txn_transaction FOREIGN KEY (transaction_id) REFERENCES transaction(id) ON DELETE RESTRICT
-);
-
-CREATE INDEX idx_add_on_txn_provider ON add_on_transaction(provider_id);
-CREATE INDEX idx_add_on_txn_plan ON add_on_transaction(add_on_plan_id);
-CREATE INDEX idx_add_on_txn_transaction ON add_on_transaction(transaction_id);
+--
+--CREATE TABLE add_on_transaction (
+--    id BIGSERIAL PRIMARY KEY,
+--    provider_id BIGINT NOT NULL,
+--    add_on_plan_id BIGINT,
+--
+--    credits_amount DECIMAL(10,2) default 0.00,
+--    transaction_id BIGINT NOT NULL, -- Reference to the transaction that purchased this add-on
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    extra_data JSONB,
+--    CONSTRAINT fk_add_on_txn_provider FOREIGN KEY (provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+--    CONSTRAINT fk_add_on_txn_plan FOREIGN KEY (add_on_plan_id) REFERENCES add_on_plan(id) ON DELETE SET NULL,
+--    CONSTRAINT fk_add_on_txn_transaction FOREIGN KEY (transaction_id) REFERENCES transaction(id) ON DELETE RESTRICT
+--);
+--
+--CREATE INDEX idx_add_on_txn_provider ON add_on_transaction(provider_id);
+--CREATE INDEX idx_add_on_txn_plan ON add_on_transaction(add_on_plan_id);
+--CREATE INDEX idx_add_on_txn_transaction ON add_on_transaction(transaction_id);
 
 --
 --CREATE TABLE add_on_transaction (
@@ -1515,10 +1698,11 @@ CREATE TABLE discount_plan (
     max_discount_value NUMERIC(15,4),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     coupon_required BOOLEAN NOT NULL DEFAULT TRUE,
-    applies_to discount_user_type NOT NULL DEFAULT 'NEW_USER',
+--    applies_to discount_user_type NOT NULL DEFAULT 'NEW_USER',
     extra_data JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    version INT NOT NULL DEFAULT 1, -- Versioning for optimistic locking
     CONSTRAINT fk_discount_plan_country FOREIGN KEY (country_id) REFERENCES country(country_id)
 );
 
@@ -1559,6 +1743,7 @@ CREATE TABLE coupon (
     is_global BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    version INT NOT NULL DEFAULT 1, -- Versioning for optimistic locking
     CONSTRAINT fk_coupon_discount_plan FOREIGN KEY (discount_plan_id) REFERENCES discount_plan(id),
     CONSTRAINT fk_coupon_created_by FOREIGN KEY (created_by) REFERENCES user_profile(user_profile_id)
 );
@@ -1568,9 +1753,16 @@ CREATE INDEX idx_coupon_code ON coupon(code);
 CREATE UNIQUE INDEX unique_global_coupon_per_discount ON coupon (is_global, discount_plan_id) WHERE is_global = true;
 
 
-CREATE TABLE service_provider_discount_usage_tracker (
+CREATE TYPE discount_user_type_enum AS ENUM (
+'SERVICE_PROVIDER',
+'CUSTOMER'
+);
+
+CREATE TABLE discount_usage_tracker (
     id BIGSERIAL PRIMARY KEY,
-    provider_id BIGINT NOT NULL,
+--    provider_id BIGINT NOT NULL,
+    discount_user_type discount_user_type_enum NOT NULL,
+    discount_user_id BIGINT NOT NULL,
     discount_id BIGINT NOT NULL,
     usage_limit INT NOT NULL,
     use_count INT NOT NULL DEFAULT 0,
@@ -1587,10 +1779,17 @@ CREATE INDEX idx_spdut_discount ON service_provider_discount_usage_tracker(disco
 CREATE INDEX idx_spdut_provider_id_discount_id ON service_provider_discount_usage_tracker(provider_id, discount_id);
 
 
-CREATE TABLE service_provider_coupon_tracker (
+CREATE TYPE coupon_user_type_enum AS ENUM (
+'SERVICE_PROVIDER',
+'CUSTOMER'
+);
+
+CREATE TABLE coupon_usage_tracker (
     id BIGSERIAL PRIMARY KEY,
     coupon_id BIGINT NOT NULL,
-    provider_id BIGINT NOT NULL,
+--    provider_id BIGINT NOT NULL,
+    coupon_user_type coupon_user_type_enum NOT NULL,
+    coupon_user_id BIGINT NOT NULL,
     usage_limit INT NOT NULL,
     use_count INT NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -1734,7 +1933,7 @@ CREATE TYPE job_quote_status_enum AS ENUM (
 
 --CREATE TYPE
 -- AS ENUM ('SERVICE_PROVIDER','CUSTOMER', 'EMPLOYEE', 'OWNER', 'MANAGER', 'ALL');
-CREATE TYPE message_context_type_enum AS ENUM ('JOB', 'SUPPORT', 'QUOTATION', 'GENERAL');
+CREATE TYPE message_context_type_enum AS ENUM ('JOB', 'SUPPORT', 'QUOTE', 'GENERAL');
 
 -- Skill
 CREATE TABLE skill (

@@ -45,11 +45,11 @@ public class JobRequestProducerServiceImpl implements JobRequestProducerService 
             }
 
             // Validate file size
-            if (Constants.IMAGE_EXTENSIONS.contains(ext) && file.getSize() > Constants.JOB_REQUEST_IMAGE_MAX_SIZE) {
+            if (Constants.IMAGE_EXTENSIONS.contains(ext) && file.getSize() > Constants.IMAGE_MAX_SIZE) {
                 continue;
-            }else if (Constants.VIDEO_EXTENSIONS.contains(ext) && file.getSize() > Constants.JOB_REQUEST_VIDEO_MAX_SIZE) {
+            } else if (Constants.VIDEO_EXTENSIONS.contains(ext) && file.getSize() > Constants.VIDEO_MAX_SIZE) {
                 continue;
-            }else if (Constants.DOCUMENT_EXTENSIONS.contains(ext) && file.getSize() > Constants.JOB_REQUEST_DOCUMENT_MAX_SIZE) {
+            } else if (Constants.DOCUMENT_EXTENSIONS.contains(ext) && file.getSize() > Constants.DOCUMENT_MAX_SIZE) {
                 continue;
             }
 
@@ -81,10 +81,10 @@ public class JobRequestProducerServiceImpl implements JobRequestProducerService 
 
     private String getFileExtension(String filename) {
         int idx = filename.lastIndexOf('.');
-        if (idx < 0 || idx == filename.length()-1) {
+        if (idx < 0 || idx == filename.length() - 1) {
             throw new IllegalArgumentException("Invalid file extension in filename: " + filename);
         }
-        return filename.substring(idx+1);
+        return filename.substring(idx + 1);
     }
 
 }

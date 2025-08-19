@@ -48,4 +48,8 @@ public interface ServiceProviderServiceInterface {
     boolean existsActiveServiceProviderServiceByProviderIdAndServiceId(Long serviceProviderId, Long serviceId);
 
     Optional<ServiceProvider> getServiceProviderByIdWithNotificationPreference(Long providerId);
+
+    ServiceProvider getServiceProviderWithBusinessAddressById(Long providerId);
+
+    Optional<ServiceProvider> getServiceProvider(Long serviceProviderId);
 }

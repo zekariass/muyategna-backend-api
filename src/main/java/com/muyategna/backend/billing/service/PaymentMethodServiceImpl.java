@@ -36,6 +36,17 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
         return PaymentMethodMapper.toLocalizedDto(paymentMethod, translation);
     }
 
+    @Override
+    public PaymentMethod getPaymentMethod(Long paymentMethodId) {
+        log.info("Retrieving payment method with ID : {}", paymentMethodId);
+
+        // Get country from the context
+        CountryDto countryDto = CountryContextHolder.getCountry();
+        PaymentMethod paymentMethod = repository.findByIdAndCountryId(paymentMethodId, countryDto.getId()).orElse(null);
+        log.info("Payment method with ID : {} retrieved successfully", paymentMethodId);
+        return paymentMethod;
+    }
+
 
     @Override
     public List<PaymentMethodLocalizedDto> getAllPaymentMethodsForCurrentCountry() {

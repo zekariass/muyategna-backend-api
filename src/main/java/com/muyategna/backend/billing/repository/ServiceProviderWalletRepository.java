@@ -19,4 +19,6 @@ public interface ServiceProviderWalletRepository extends JpaRepository<ServicePr
                     """
     )
     Optional<ServiceProviderWallet> findByServiceProviderIdWithRelatedEntities(Long serviceProviderId);
+
+    Optional<ServiceProviderWallet> findByProviderId(Long providerId);
 }

@@ -22,7 +22,9 @@ public final class Constants {
             "/v3/api-docs",
             "/swagger-resource",
             "/webjars",
-            "/docs"
+            "/docs",
+            "/api/v1/secured/billing/payment/chapa/webhook",
+            "/api/v1/secured/billing/payment/pesapal/IPN"
     );
 
     public static final List<String> PUBLIC_API_ENDPOINTS_FOR_ACCESS = List.of(
@@ -35,7 +37,9 @@ public final class Constants {
             "/v3/api-docs/**",
             "/swagger-resource/**",
             "/webjars/**",
-            "/docs"
+            "/docs",
+            "/api/v1/secured/billing/payment/chapa/webhook",
+            "/api/v1/secured/billing/payment/pesapal/IPN"
     );
 
 
@@ -86,10 +90,13 @@ public final class Constants {
     public static final String SP_RANKING_FOR_NEW_LEAD_ASSIGNMENT_QUEUE_BASE_NAME = "service.provider.ranking.for.new.lead.assignment";
     public static final String SP_RANKING_FOR_LEAD_REASSIGNMENT_QUEUE_BASE_NAME = "service.provider.ranking.for.lead.reassignment";
 
-    public static final long JOB_REQUEST_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
-    public static final long JOB_REQUEST_VIDEO_MAX_SIZE = 20 * 1024 * 1024;
-    public static final long JOB_REQUEST_DOCUMENT_MAX_SIZE = 2 * 1024 * 1024;
-    public static final long JOB_REQUEST_ARCHIVE_MAX_SIZE = 50 * 1024 * 1024;
+    // Billing Queues
+    public static final String BANK_TRANSFER_PROOF_UPLOAD_QUEUE_BASE_NAME = "bank.transfer.proof.upload";
+
+    public static final long IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+    public static final long VIDEO_MAX_SIZE = 20 * 1024 * 1024;
+    public static final long DOCUMENT_MAX_SIZE = 2 * 1024 * 1024;
+    public static final long ARCHIVE_MAX_SIZE = 50 * 1024 * 1024;
 
     private Constants() {
         // Prevent instantiation

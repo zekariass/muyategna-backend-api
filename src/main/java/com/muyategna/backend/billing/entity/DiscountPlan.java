@@ -1,6 +1,5 @@
 package com.muyategna.backend.billing.entity;
 
-import com.muyategna.backend.billing.enums.DiscountUserType;
 import com.muyategna.backend.location.entity.Country;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
@@ -40,7 +39,7 @@ public class DiscountPlan {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-    
+
     @Column(name = "fixed_value", precision = 15, scale = 4, nullable = false)
     private BigDecimal fixedValue;
 
@@ -71,9 +70,9 @@ public class DiscountPlan {
     @Column(name = "coupon_required", nullable = false)
     private Boolean couponRequired = true;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "applies_to", nullable = false)
-    private DiscountUserType appliesTo;
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "applies_to", nullable = false)
+//    private DiscountUserType appliesTo;
 
     @Type(JsonBinaryType.class)
     @Column(name = "extra_data", columnDefinition = "jsonb")
@@ -86,6 +85,9 @@ public class DiscountPlan {
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Version
+    private Integer version; // Optimistic locking version field
 
     @OneToMany(mappedBy = "discountPlan", cascade = CascadeType.ALL, orphanRemoval = true)
     List<DiscountPlanTranslation> translations;
