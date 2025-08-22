@@ -48,7 +48,8 @@ public class RabbitConfig {
                 QueueSpec.withBaseName(Constants.NOTIFY_SP_ABOUT_QUOTE_STATUS_CHANGE_QUEUE_BASE_NAME),
                 QueueSpec.withBaseName(Constants.NOTIFY_CUSTOMER_ABOUT_CLAIM_STATUS_CHANGE_QUEUE_BASE_NAME),
                 QueueSpec.withBaseName(Constants.NOTIFY_SP_ABOUT_CLAIM_STATUS_CHANGE_QUEUE_BASE_NAME),
-                QueueSpec.withBaseName(Constants.BANK_TRANSFER_PROOF_UPLOAD_QUEUE_BASE_NAME)
+                QueueSpec.withBaseName(Constants.BANK_TRANSFER_PROOF_UPLOAD_QUEUE_BASE_NAME),
+                QueueSpec.withBaseName(Constants.MESSAGE_ATTACHMENT_UPLOAD_QUEUE_BASE_NAME)
 
         );
     }

@@ -44,5 +44,7 @@ public class MessageParticipantStatus {
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
 }
+
 

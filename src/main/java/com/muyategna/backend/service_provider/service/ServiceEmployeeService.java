@@ -6,6 +6,7 @@ import com.muyategna.backend.service_provider.entity.ServiceEmployee;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ServiceEmployeeService {
@@ -22,4 +23,8 @@ public interface ServiceEmployeeService {
     Boolean activateServiceEmployeeById(Long serviceProviderId, Long serviceEmployeeId);
 
     Boolean deactivateServiceEmployeeById(Long serviceProviderId, Long serviceEmployeeId);
+
+    Optional<ServiceEmployee> getEmployeeByUserIdAndProviderId(Long userProfileId, Long participantId);
+
+    boolean existByServiceProviderIdAndUserProfileId(Long serviceProviderId, Long userProfileId);
 }

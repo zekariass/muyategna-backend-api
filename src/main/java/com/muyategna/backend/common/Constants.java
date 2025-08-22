@@ -93,6 +93,11 @@ public final class Constants {
     // Billing Queues
     public static final String BANK_TRANSFER_PROOF_UPLOAD_QUEUE_BASE_NAME = "bank.transfer.proof.upload";
 
+    // Messaging Queues
+    public static final String MESSAGE_ATTACHMENT_UPLOAD_QUEUE_BASE_NAME = "message.attachment.upload";
+
+
+    // Upload Size Limits
     public static final long IMAGE_MAX_SIZE = 5 * 1024 * 1024;
     public static final long VIDEO_MAX_SIZE = 20 * 1024 * 1024;
     public static final long DOCUMENT_MAX_SIZE = 2 * 1024 * 1024;

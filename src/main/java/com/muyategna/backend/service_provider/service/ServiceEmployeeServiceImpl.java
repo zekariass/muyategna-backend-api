@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -135,5 +136,18 @@ public class ServiceEmployeeServiceImpl implements ServiceEmployeeService {
         }
         log.info("Deactivated service employee with ID: {}", serviceEmployeeId);
         return true;
+    }
+
+    @Override
+    public Optional<ServiceEmployee> getEmployeeByUserIdAndProviderId(Long userProfileId, Long participantId) {
+        log.info("Retrieving service employee by user id: {} and provider id: {}", userProfileId, participantId);
+        Optional<ServiceEmployee> serviceEmployee = serviceEmployeeRepository.findByUserProfileIdAndServiceProviderIdAndIsActiveAndIsBlocked(userProfileId, participantId, true, false);
+        log.info("Retrieved service employee by user id: {}", userProfileId);
+        return serviceEmployee;
+    }
+
+    @Override
+    public boolean existByServiceProviderIdAndUserProfileId(Long serviceProviderId, Long userProfileId) {
+        return serviceEmployeeRepository.existsByServiceProviderIdAndUserProfileId(serviceProviderId, userProfileId);
     }
 }

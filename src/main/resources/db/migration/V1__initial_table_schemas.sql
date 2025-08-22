@@ -1933,7 +1933,7 @@ CREATE TYPE job_quote_status_enum AS ENUM (
 
 --CREATE TYPE
 -- AS ENUM ('SERVICE_PROVIDER','CUSTOMER', 'EMPLOYEE', 'OWNER', 'MANAGER', 'ALL');
-CREATE TYPE message_context_type_enum AS ENUM ('JOB', 'SUPPORT', 'QUOTE', 'GENERAL');
+CREATE TYPE message_context_type_enum AS ENUM ('JOB', 'QUOTE', 'OTHER');
 
 -- Skill
 CREATE TABLE skill (
@@ -2090,64 +2090,86 @@ CREATE INDEX idx_review_job_request_id ON review(job_request_id);
 CREATE INDEX idx_review_customer_id ON review(customer_id);
 CREATE INDEX idx_review_service_provider_id ON review(service_provider_id);
 
+
 -- MessageThread
 CREATE TABLE message_thread (
     id BIGSERIAL PRIMARY KEY,
     subject TEXT NOT NULL,
     context_type message_context_type_enum NOT NULL,
     context_id BIGINT,
+    service_provider_id BIGINT NOT NULL,
+    customer_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_mt_service_provider FOREIGN KEY (service_provider_id) REFERENCES service_provider(id) ON DELETE CASCADE,
+    CONSTRAINT fk_mt_customer FOREIGN KEY (customer_id) REFERENCES user_profile(user_profile_id) ON DELETE CASCADE
 );
 CREATE INDEX idx_mt_context_type_id ON message_thread(context_type, context_id);
+CREATE INDEX idx_mt_service_provider_id ON message_thread(service_provider_id);
+CREATE INDEX idx_mt_customer_id ON message_thread(customer_id);
 
+
+CREATE TYPE participant_type_enum AS ENUM (
+    'SERVICE_PROVIDER',  -- User profile participant
+    'CUSTOMER'     -- Employee participant
+);
 
 -- MessageParticipant
 CREATE TABLE message_participant (
     id BIGSERIAL PRIMARY KEY,
-    user_profile_id BIGINT NOT NULL,
     thread_id BIGINT NOT NULL,
+    participant_type participant_type_enum NOT NULL,
+    participant_id BIGINT NOT NULL, -- This can be user_profile_id or service_provider_id based on participant_type
+--    employee_id BIGINT, -- Nullable, used only if participant_type is 'SERVICE_PROVIDER'
+    user_profile_id BIGINT, -- Tracks who sent the message in the case of service_provider. If participant_type is 'CUSTOMER', participant_id = user_profile_id
+    unread_count INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
-    CONSTRAINT uq_mp_user_profile_id_thread_id UNIQUE (user_profile_id, thread_id),
-    CONSTRAINT fk_mp_user_profile FOREIGN KEY (user_profile_id) REFERENCES user_profile(user_profile_id) ON DELETE CASCADE,
-    CONSTRAINT fk_mp_thread FOREIGN KEY (thread_id) REFERENCES message_thread(id) ON DELETE CASCADE
+    CONSTRAINT fk_mp_thread FOREIGN KEY (thread_id) REFERENCES message_thread(id) ON DELETE CASCADE,
+--    CONSTRAINT fk_mp_employee FOREIGN KEY (employee_id) REFERENCES service_employee(id) ON DELETE SET NULL,
+    CONSTRAINT fk_mp_user_profile FOREIGN KEY (user_profile_id) REFERENCES user_profile(user_profile_id) ON DELETE SET NULL,
+    CONSTRAINT uq_mp_thread_id_user_profile_id_participant_type UNIQUE ( thread_id, user_profile_id, participant_type )
 );
-CREATE INDEX idx_mp_user_profile_id ON message_participant(user_profile_id);
+CREATE INDEX idx_mp_participant_id ON message_participant(participant_id);
 CREATE INDEX idx_mp_thread_id ON message_participant(thread_id);
+CREATE INDEX idx_mp_user_profile_id ON message_participant(user_profile_id);
+--CREATE INDEX idx_mp_employee_id ON message_participant(employee_id);
 
 -- Message
 CREATE TABLE message (
     id BIGSERIAL PRIMARY KEY,
     thread_id BIGINT NOT NULL,
+    sender_type participant_type_enum NOT NULL,
     sender_id BIGINT NOT NULL,
-    content TEXT NOT NULL,
+    content TEXT,
     reply_to BIGINT,
+    attachments TEXT[] DEFAULT '{}', -- Array of attachment URLs
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_message_thread FOREIGN KEY (thread_id) REFERENCES message_thread(id) ON DELETE CASCADE,
-    CONSTRAINT fk_message_sender FOREIGN KEY (sender_id) REFERENCES user_profile(user_profile_id) ON DELETE CASCADE,
     CONSTRAINT fk_message_reply_to FOREIGN KEY (reply_to) REFERENCES message(id)
 );
 CREATE INDEX idx_message_thread_id ON message(thread_id);
 CREATE INDEX idx_message_sender_id ON message(sender_id);
+--CREATE INDEX idx_message_user_profile_id ON message(user_profile_id);
 
 -- MessageRead
-CREATE TABLE message_participant_status (
-    id BIGSERIAL PRIMARY KEY,
-    message_id BIGINT NOT NULL REFERENCES message(id) ON DELETE CASCADE,
-    participant_id BIGINT NOT NULL REFERENCES message_participant(id) ON DELETE CASCADE,
-    read_at TIMESTAMP,
-    deleted_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_mr_message_id_participant_id UNIQUE (message_id, participant_id),
-    CONSTRAINT fk_mr_message FOREIGN KEY (message_id) REFERENCES message(id) ON DELETE CASCADE,
-    CONSTRAINT fk_mr_participant FOREIGN KEY (participant_id) REFERENCES message_participant(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_mr_message_id ON message_participant_status(message_id);
-CREATE INDEX idx_mr_participant_id ON message_participant_status(participant_id);
+--CREATE TABLE message_participant_status (
+--    id BIGSERIAL PRIMARY KEY,
+--    message_id BIGINT NOT NULL REFERENCES message(id) ON DELETE CASCADE,
+--    participant_id BIGINT NOT NULL REFERENCES message_participant(id) ON DELETE CASCADE,
+--    read_at TIMESTAMP,
+--    deleted_at TIMESTAMP,
+--    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--    CONSTRAINT uq_mr_message_id_participant_id UNIQUE (message_id, participant_id),
+--    CONSTRAINT fk_mr_message FOREIGN KEY (message_id) REFERENCES message(id) ON DELETE CASCADE,
+--    CONSTRAINT fk_mr_participant FOREIGN KEY (participant_id) REFERENCES message_participant(id) ON DELETE CASCADE
+--);
+--CREATE INDEX idx_mr_message_id ON message_participant_status(message_id);
+--CREATE INDEX idx_mr_participant_id ON message_participant_status(participant_id);
 
 
 -- MessageAttachment

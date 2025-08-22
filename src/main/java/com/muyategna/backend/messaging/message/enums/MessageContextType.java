@@ -1,4 +1,4 @@
-package com.muyategna.backend.messaging.message.enums.enums;
+package com.muyategna.backend.messaging.message.enums;
 
 public enum MessageContextType {
     JOB,

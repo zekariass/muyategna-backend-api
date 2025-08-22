@@ -38,4 +38,8 @@ public interface ServiceEmployeeRepository extends JpaRepository<ServiceEmployee
             "FROM ServiceEmployee se " +
             "WHERE se.userProfile.id = :userProfileId")
     boolean existsByUserProfileId(@Param("userProfileId") Long userProfileId);
+
+    Optional<ServiceEmployee> findByUserProfileIdAndServiceProviderIdAndIsActiveAndIsBlocked(Long userProfileId, Long participantId, boolean isActive, boolean isBlocked);
+
+    boolean existsByServiceProviderIdAndUserProfileId(Long serviceProviderId, Long userProfileId);
 }
